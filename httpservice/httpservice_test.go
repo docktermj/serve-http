@@ -38,7 +38,7 @@ func teardown() error {
 // Test interface functions
 // ----------------------------------------------------------------------------
 
-func TestHttpServiceImpl_SaySomething(test *testing.T) {
+func TestHttpServiceImpl_Heartbeat(test *testing.T) {
 
 }
 
@@ -46,6 +46,6 @@ func TestHttpServiceImpl_SaySomething(test *testing.T) {
 // Examples for godoc documentation
 // ----------------------------------------------------------------------------
 
-func ExampleHttpServiceImpl_SaySomething() {
+func ExampleHttpServiceImpl_Heartbeat() {
 
 }

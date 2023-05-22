@@ -9,6 +9,8 @@ import (
 
 	"github.com/docktermj/go-http/senzinghttpapi"
 	"github.com/docktermj/serve-http/httpservice"
+	"github.com/ogen-go/ogen/middleware"
+	"github.com/senzing/go-logging/logger"
 	"github.com/senzing/go-logging/logging"
 	"github.com/senzing/go-observing/observer"
 	"github.com/senzing/go-observing/observerpb"
@@ -92,6 +94,22 @@ func (httpServer *HttpServerImpl) createGrpcObserver(ctx context.Context, parsed
 }
 
 // ----------------------------------------------------------------------------
+// Internal methods
+// ----------------------------------------------------------------------------
+
+func (httpServer *HttpServerImpl) addResponseHeaders() middleware.Middleware {
+	return func(
+		req middleware.Request,
+		next func(req middleware.Request) (middleware.Response, error),
+	) (middleware.Response, error) {
+		fmt.Println(">>>>>> Hi there")
+		logger.Info("Handling request")
+		resp, err := next(req)
+		return resp, err
+	}
+}
+
+// ----------------------------------------------------------------------------
 // Interface methods
 // ----------------------------------------------------------------------------
 
@@ -112,9 +130,17 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 
 	service := &httpservice.HttpServiceImpl{}
 
+	// Create generated server options.
+
+	serverOptions := []senzinghttpapi.ServerOption{
+		// httpServer.addResponseHeaders,
+	}
+
+	httpServer.addResponseHeaders()
+
 	// Create generated server.
 
-	srv, err := senzinghttpapi.NewServer(service)
+	srv, err := senzinghttpapi.NewServer(service, serverOptions...)
 	if err != nil {
 		log.Fatal(err)
 	}
