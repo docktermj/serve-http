@@ -12,7 +12,7 @@ ARG IMAGE_FINAL=alpine
 
 FROM ${IMAGE_GO_BUILDER} as go_builder
 ENV REFRESHED_AT=2023-02-22
-LABEL Name="senzing/template-go-builder" \
+LABEL Name="senzing/serve-http-builder" \
       Maintainer="support@senzing.com" \
       Version="0.0.5"
 
@@ -54,7 +54,7 @@ RUN mkdir -p /output \
 
 FROM ${IMAGE_FPM_BUILDER} as fpm_builder
 ENV REFRESHED_AT=2023-02-22
-LABEL Name="senzing/template-go-fpm-builder" \
+LABEL Name="senzing/serve-http-fpm-builder" \
       Maintainer="support@senzing.com" \
       Version="0.0.5"
 
@@ -98,7 +98,7 @@ RUN fpm \
 
 FROM ${IMAGE_FINAL} as final
 ENV REFRESHED_AT=2023-02-06
-LABEL Name="senzing/template-go" \
+LABEL Name="senzing/serve-http" \
       Maintainer="support@senzing.com" \
       Version="0.0.5"
 

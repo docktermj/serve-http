@@ -1,4 +1,4 @@
-# template-go examples
+# serve-http examples
 
 ## Examples of CLI
 

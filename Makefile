@@ -1,4 +1,4 @@
-# Makefile for template-go.
+# Makefile for serve-http.
 
 # "Simple expanded" variables (':=')
 

@@ -5,7 +5,7 @@ package main
 import (
 	"log"
 
-	"github.com/senzing/template-go/cmd"
+	"github.com/docktermj/serve-http/cmd"
 )
 
 func main() {

@@ -1,4 +1,4 @@
-package examplepackage
+package httpserver
 
 import (
 	"context"
@@ -55,7 +55,7 @@ func TestExamplePackageImpl_SaySomething(test *testing.T) {
 // ----------------------------------------------------------------------------
 
 func ExampleExamplePackageImpl_SaySomething() {
-	// For more information, visit https://github.com/Senzing/template-go/blob/main/examplepackage/examplepackage_test.go
+	// For more information, visit https://github.com/Senzing/serve-http/blob/main/examplepackage/examplepackage_test.go
 	ctx := context.TODO()
 	examplePackage := &ExamplePackageImpl{
 		Something: "I'm here",

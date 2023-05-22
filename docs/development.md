@@ -1,4 +1,4 @@
-# template-go development
+# serve-http development
 
 ## Install Go
 
@@ -22,7 +22,7 @@ Since the Senzing library is a prerequisite, it must be installed first.
 
     ```console
     export GIT_ACCOUNT=senzing
-    export GIT_REPOSITORY=template-go
+    export GIT_REPOSITORY=serve-http
     export GIT_ACCOUNT_DIR=~/${GIT_ACCOUNT}.git
     export GIT_REPOSITORY_DIR="${GIT_ACCOUNT_DIR}/${GIT_REPOSITORY}"
 
@@ -54,7 +54,7 @@ Since the Senzing library is a prerequisite, it must be installed first.
    Example:
 
     ```console
-    ${GIT_REPOSITORY_DIR}/target/linux/template-go
+    ${GIT_REPOSITORY_DIR}/target/linux/serve-http
 
     ```
 
@@ -91,11 +91,11 @@ Since the Senzing library is a prerequisite, it must be installed first.
 
 1. Visit [localhost:6060](http://localhost:6060)
 1. Senzing documentation will be in the "Third party" section.
-   `github.com` > `senzing` > `template-go`
+   `github.com` > `senzing` > `serve-http`
 
 1. When a versioned release is published with a `v0.0.0` format tag,
 the reference can be found by clicking on the following badge at the top of the README.md page:
-[![Go Reference](https://pkg.go.dev/badge/github.com/senzing/template-go.svg)](https://pkg.go.dev/github.com/senzing/template-go)
+[![Go Reference](https://pkg.go.dev/badge/github.com/senzing/serve-http.svg)](https://pkg.go.dev/github.com/senzing/serve-http)
 
 ## Docker
 
@@ -114,7 +114,7 @@ the reference can be found by clicking on the following badge at the top of the 
     ```console
     docker run \
       --rm \
-      senzing/template-go
+      senzing/serve-http
 
     ```
 
@@ -141,20 +141,20 @@ the reference can be found by clicking on the following badge at the top of the 
 
 ### Test DEB package on Ubuntu
 
-1. Determine if `template-go` is installed.
+1. Determine if `serve-http` is installed.
    Example:
 
     ```console
-    apt list --installed | grep template-go
+    apt list --installed | grep serve-http
 
     ```
 
-1. :pencil2: Install `template-go`.
+1. :pencil2: Install `serve-http`.
    Example:
 
     ```console
     cd ${GIT_REPOSITORY_DIR}/target
-    sudo apt install ./template-go-0.0.0.deb
+    sudo apt install ./serve-http-0.0.0.deb
 
     ```
 
@@ -162,14 +162,14 @@ the reference can be found by clicking on the following badge at the top of the 
    Example:
 
     ```console
-    template-go
+    serve-http
 
     ```
 
-1. Remove `template-go` from system.
+1. Remove `serve-http` from system.
    Example:
 
     ```console
-    sudo apt-get remove template-go
+    sudo apt-get remove serve-http
 
     ```

@@ -1,17 +1,15 @@
-package examplepackage
+package httpservice
 
 import (
 	"context"
-	"fmt"
 )
 
 // ----------------------------------------------------------------------------
 // Types
 // ----------------------------------------------------------------------------
 
-// ExamplePackageImpl is an example type-struct.
-type ExamplePackageImpl struct {
-	Something string
+// HttpServiceImpl is...
+type HttpServiceImpl struct {
 }
 
 // ----------------------------------------------------------------------------
@@ -34,7 +32,6 @@ Output
   - Nothing is returned, except for an error.  However, something is printed.
     See the example output.
 */
-func (examplepackage *ExamplePackageImpl) SaySomething(ctx context.Context) error {
-	fmt.Printf("%s: %s\n", exampleConstant, examplepackage.Something)
+func (httpService *HttpServiceImpl) SaySomething(ctx context.Context) error {
 	return nil
 }

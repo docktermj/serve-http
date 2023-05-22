@@ -21,7 +21,7 @@ var docsCmd = &cobra.Command{
 			return err
 		}
 		if dir == "" {
-			if dir, err = os.MkdirTemp("", "template-go"); err != nil {
+			if dir, err = os.MkdirTemp("", "serve-http"); err != nil {
 				return err
 			}
 		}

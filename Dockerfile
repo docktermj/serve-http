@@ -13,7 +13,7 @@ ARG IMAGE_FINAL=senzing/senzingapi-runtime:3.4.2
 FROM ${IMAGE_FINAL} as senzing-runtime
 FROM ${IMAGE_GO_BUILDER} as go_builder
 ENV REFRESHED_AT=2023-02-22
-LABEL Name="senzing/template-go-builder" \
+LABEL Name="senzing/serve-http-builder" \
       Maintainer="support@senzing.com" \
       Version="0.0.5"
 
@@ -62,13 +62,13 @@ RUN mkdir -p /output \
 
 FROM ${IMAGE_FINAL} as final
 ENV REFRESHED_AT=2023-02-22
-LABEL Name="senzing/template-go" \
+LABEL Name="senzing/serve-http" \
       Maintainer="support@senzing.com" \
       Version="0.0.5"
 
 # Copy files from prior step.
 
-COPY --from=go_builder "/output/linux/template-go" "/app/template-go"
+COPY --from=go_builder "/output/linux/serve-http" "/app/serve-http"
 
 # Runtime environment variables.
 
@@ -77,4 +77,4 @@ ENV LD_LIBRARY_PATH=/opt/senzing/g2/lib/
 # Runtime execution.
 
 WORKDIR /app
-ENTRYPOINT ["/app/template-go"]
+ENTRYPOINT ["/app/serve-http"]

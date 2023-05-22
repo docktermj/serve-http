@@ -8,24 +8,28 @@ import (
 	"os"
 	"strings"
 
+	"github.com/docktermj/serve-http/httpserver"
+	"github.com/senzing/go-common/g2engineconfigurationjson"
 	"github.com/senzing/senzing-tools/constant"
 	"github.com/senzing/senzing-tools/envar"
 	"github.com/senzing/senzing-tools/helper"
 	"github.com/senzing/senzing-tools/option"
-	"github.com/senzing/template-go/examplepackage"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 const (
 	defaultConfiguration           string = ""
+	defaultDatabaseUrl             string = ""
 	defaultEngineConfigurationJson string = ""
 	defaultEngineLogLevel          int    = 0
 	defaultLogLevel                string = "INFO"
-	Short                          string = "template-go short description"
-	Use                            string = "template-go"
+	defaultObserverOrigin          string = ""
+	defaultObserverUrl             string = ""
+	Short                          string = "serve-http short description"
+	Use                            string = "serve-http"
 	Long                           string = `
-template-go long description.
+serve-http long description.
 	`
 )
 
@@ -37,8 +41,11 @@ template-go long description.
 func init() {
 	RootCmd.Flags().Int(option.EngineLogLevel, defaultEngineLogLevel, fmt.Sprintf("Log level for Senzing Engine [%s]", envar.EngineLogLevel))
 	RootCmd.Flags().String(option.Configuration, defaultConfiguration, fmt.Sprintf("Path to configuration file [%s]", envar.Configuration))
+	RootCmd.Flags().String(option.DatabaseUrl, defaultDatabaseUrl, fmt.Sprintf("URL of database to initialize [%s]", envar.DatabaseUrl))
 	RootCmd.Flags().String(option.EngineConfigurationJson, defaultEngineConfigurationJson, fmt.Sprintf("JSON string sent to Senzing's init() function [%s]", envar.EngineConfigurationJson))
 	RootCmd.Flags().String(option.LogLevel, defaultLogLevel, fmt.Sprintf("Log level [%s]", envar.LogLevel))
+	RootCmd.Flags().String(option.ObserverOrigin, defaultObserverOrigin, fmt.Sprintf("Identify this instance to the Observer [%s]", envar.ObserverOrigin))
+	RootCmd.Flags().String(option.ObserverUrl, defaultObserverUrl, fmt.Sprintf("URL of Observer [%s]", envar.ObserverUrl))
 }
 
 // If a configuration file is present, load it.
@@ -59,7 +66,7 @@ func loadConfigurationFile(cobraCommand *cobra.Command) {
 
 		// Specify configuration file name.
 
-		viper.SetConfigName("template-go")
+		viper.SetConfigName("serve-http")
 		viper.SetConfigType("yaml")
 
 		// Define search path order.
@@ -100,8 +107,12 @@ func loadOptions(cobraCommand *cobra.Command) {
 	// Strings
 
 	stringOptions := map[string]string{
+		option.Configuration:           defaultConfiguration,
+		option.DatabaseUrl:             defaultDatabaseUrl,
 		option.EngineConfigurationJson: defaultEngineConfigurationJson,
 		option.LogLevel:                defaultLogLevel,
+		option.ObserverOrigin:          defaultObserverOrigin,
+		option.ObserverUrl:             defaultObserverUrl,
 	}
 	for optionKey, optionValue := range stringOptions {
 		viper.SetDefault(optionKey, optionValue)
@@ -136,10 +147,27 @@ func PreRun(cobraCommand *cobra.Command, args []string) {
 func RunE(_ *cobra.Command, _ []string) error {
 	var err error = nil
 	ctx := context.TODO()
-	examplePackage := &examplepackage.ExamplePackageImpl{
-		Something: "Main says 'Hi!'",
+
+	logLevelName := viper.GetString(option.LogLevel)
+
+	senzingEngineConfigurationJson := viper.GetString(option.EngineConfigurationJson)
+	if len(senzingEngineConfigurationJson) == 0 {
+		senzingEngineConfigurationJson, err = g2engineconfigurationjson.BuildSimpleSystemConfigurationJson(viper.GetString(option.DatabaseUrl))
+		if err != nil {
+			return err
+		}
 	}
-	err = examplePackage.SaySomething(ctx)
+
+	httpServer := &httpserver.HttpServerImpl{
+		LogLevelName:                   logLevelName,
+		ObserverOrigin:                 viper.GetString(option.ObserverOrigin),
+		ObserverUrl:                    viper.GetString(option.ObserverUrl),
+		Port:                           viper.GetInt(option.GrpcPort),
+		SenzingEngineConfigurationJson: senzingEngineConfigurationJson,
+		SenzingModuleName:              viper.GetString(option.EngineModuleName),
+		SenzingVerboseLogging:          viper.GetInt(option.EngineLogLevel),
+	}
+	err = httpServer.Serve(ctx)
 	return err
 }
 

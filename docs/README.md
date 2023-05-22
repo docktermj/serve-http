@@ -1,5 +1,5 @@
-# template-go
+# serve-http
 
 Placeholder for [GitHub pages](https://pages.github.com/).
 
-See [https://hub.senzing.com/template-go](https://hub.senzing.com/template-go).
+See [https://hub.senzing.com/serve-http](https://hub.senzing.com/serve-http).

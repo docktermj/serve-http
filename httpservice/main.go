@@ -1,16 +1,16 @@
-package examplepackage
+package httpservice
 
 import (
-	"context"
+	"github.com/docktermj/go-http/senzinghttpapi"
 )
 
 // ----------------------------------------------------------------------------
 // Types
 // ----------------------------------------------------------------------------
 
-// The ExamplePackage interface is an example interface.
-type ExamplePackage interface {
-	SaySomething(ctx context.Context) error
+// The HttpService interface is...
+type HttpService interface {
+	senzinghttpapi.Handler
 }
 
 // ----------------------------------------------------------------------------
