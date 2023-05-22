@@ -8,6 +8,7 @@ import (
 	"net/url"
 
 	"github.com/docktermj/go-http/senzinghttpapi"
+	"github.com/docktermj/serve-http/httpservice"
 	"github.com/senzing/go-logging/logging"
 	"github.com/senzing/go-observing/observer"
 	"github.com/senzing/go-observing/observerpb"
@@ -109,7 +110,7 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 
 	// Create service instance.
 
-	service := &HttpServerImpl{}
+	service := &httpservice.HttpServiceImpl{}
 
 	// Create generated server.
 
@@ -120,5 +121,7 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 	if err := http.ListenAndServe(":8080", srv); err != nil {
 		log.Fatal(err)
 	}
+
+	return err
 
 }
