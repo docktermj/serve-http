@@ -118,7 +118,9 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := http.ListenAndServe(":8080", srv); err != nil {
+
+	fmt.Printf("Serving on port: %d\n", httpServer.Port)
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", httpServer.Port), srv); err != nil {
 		log.Fatal(err)
 	}
 

@@ -2,6 +2,7 @@ package httpservice
 
 import (
 	"context"
+	"time"
 
 	"github.com/docktermj/go-http/senzinghttpapi"
 	ogenHttp "github.com/ogen-go/ogen/http"
@@ -13,6 +14,41 @@ import (
 
 // HttpServiceImpl is...
 type HttpServiceImpl struct {
+	senzinghttpapi.UnimplementedHandler
+}
+
+// ----------------------------------------------------------------------------
+// internal methods
+// ----------------------------------------------------------------------------
+
+func (httpService *HttpServiceImpl) getOptSzLinks() senzinghttpapi.OptSzLinks {
+	var result senzinghttpapi.OptSzLinks
+	szLinks := senzinghttpapi.SzLinks{
+		Self:                 senzinghttpapi.NewOptString("SelfBob"),
+		OpenApiSpecification: senzinghttpapi.NewOptString("OpenApiSpecificationBob"),
+	}
+	result = senzinghttpapi.NewOptSzLinks(szLinks)
+	return result
+}
+
+func (httpService *HttpServiceImpl) getOptSzMeta() senzinghttpapi.OptSzMeta {
+	var result senzinghttpapi.OptSzMeta
+	szMeta := senzinghttpapi.SzMeta{
+		Server:                     senzinghttpapi.NewOptString("ServerBob"),
+		HttpMethod:                 senzinghttpapi.NewOptSzHttpMethod(senzinghttpapi.SzHttpMethodGET),
+		HttpStatusCode:             senzinghttpapi.NewOptInt(200),
+		Timestamp:                  senzinghttpapi.NewOptDateTime(time.Now()),
+		Version:                    senzinghttpapi.NewOptString("VersionBob"),
+		RestApiVersion:             senzinghttpapi.NewOptString("RestApiVersionBob"),
+		NativeApiVersion:           senzinghttpapi.NewOptString("NativeApiVersionBob"),
+		NativeApiBuildVersion:      senzinghttpapi.NewOptString("NativeApiBuildVersionBob"),
+		NativeApiBuildNumber:       senzinghttpapi.NewOptString("NativeApiBuildNumberBob"),
+		NativeApiBuildDate:         senzinghttpapi.NewOptDateTime(time.Now()),
+		ConfigCompatibilityVersion: senzinghttpapi.NewOptString("ConfigCompatibilityVersionBob"),
+		Timings:                    senzinghttpapi.NewOptNilSzMetaTimings(map[string]int64{}),
+	}
+	result = senzinghttpapi.NewOptSzMeta(szMeta)
+	return result
 }
 
 // ----------------------------------------------------------------------------
@@ -349,7 +385,11 @@ func (httpService *HttpServiceImpl) GetVirtualEntityByRecordIds(ctx context.Cont
 //
 // GET /heartbeat
 func (httpService *HttpServiceImpl) Heartbeat(ctx context.Context) (r *senzinghttpapi.SzBaseResponse, _ error) {
-	return r, ogenHttp.ErrNotImplemented
+	r = &senzinghttpapi.SzBaseResponse{
+		Links: httpService.getOptSzLinks(),
+		Meta:  httpService.getOptSzMeta(),
+	}
+	return r, nil
 }
 
 // HowEntityByEntityID implements howEntityByEntityID operation.
