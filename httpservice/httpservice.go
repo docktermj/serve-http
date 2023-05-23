@@ -2,7 +2,6 @@ package httpservice
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	api "github.com/docktermj/go-http/senzinghttpapi"
@@ -61,11 +60,10 @@ func (httpService *HttpServiceImpl) AddDataSources(ctx context.Context, req api.
 
 	// URl parameters.
 
-	dataSource := params.DataSource
-	withRaw := params.WithRaw
+	// dataSource := params.DataSource
+	// withRaw := params.WithRaw
 
-	fmt.Printf(">>>>>> dataSource: %s\n", dataSource)
-	fmt.Printf(">>>>>> r: %v\n", r)
+	// TODO: Call Senzing
 
 	// type SzDataSource struct {
 	// 	// The data source code.
@@ -125,7 +123,26 @@ func (httpService *HttpServiceImpl) AddDataSources(ctx context.Context, req api.
 	r = &api.SzDataSourcesResponse{
 		Data: *optSzDataSourcesResponseData,
 	}
-	// params.
+
+	// Condensed version of "r"
+
+	r = &api.SzDataSourcesResponse{
+		Data: api.OptSzDataSourcesResponseData{
+			Set: true,
+			Value: api.SzDataSourcesResponseData{
+				DataSources: []string{"Bobber"},
+				DataSourceDetails: api.OptSzDataSourcesResponseDataDataSourceDetails{
+					Set: true,
+					Value: api.SzDataSourcesResponseDataDataSourceDetails{
+						"xxxBob": api.SzDataSource{
+							DataSourceCode: api.NewOptString("DataSourceCodeBob"),
+							DataSourceId:   api.NewOptNilInt32(1),
+						},
+					},
+				},
+			},
+		},
+	}
 
 	return r, err
 }
