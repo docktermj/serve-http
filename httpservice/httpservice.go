@@ -59,18 +59,71 @@ func (httpService *HttpServiceImpl) getOptSzMeta() api.OptSzMeta {
 func (httpService *HttpServiceImpl) AddDataSources(ctx context.Context, req api.AddDataSourcesReq, params api.AddDataSourcesParams) (r api.AddDataSourcesRes, _ error) {
 	var err error = nil
 
+	// URl parameters.
+
 	dataSource := params.DataSource
+	withRaw := params.WithRaw
 
 	fmt.Printf(">>>>>> dataSource: %s\n", dataSource)
 	fmt.Printf(">>>>>> r: %v\n", r)
+
+	// type SzDataSource struct {
+	// 	// The data source code.
+	// 	DataSourceCode OptString `json:"dataSourceCode"`
+	// 	// The data source ID. The value can be null when used for input in creating a data source to
+	// 	// indicate that the data source ID should be auto-generated.
+	// 	DataSourceId OptNilInt32 `json:"dataSourceId"`
+	// }
 
 	szDataSource := &api.SzDataSource{
 		DataSourceCode: api.NewOptString("DataSourceCodeBob"),
 		DataSourceId:   api.NewOptNilInt32(1),
 	}
 
+	// type SzDataSourcesResponseDataDataSourceDetails map[string]SzDataSource
+
+	szDataSourcesResponseDataDataSourceDetails := &api.SzDataSourcesResponseDataDataSourceDetails{
+		"xxxBob": *szDataSource,
+	}
+
+	// type OptSzDataSourcesResponseDataDataSourceDetails struct {
+	// 	Value SzDataSourcesResponseDataDataSourceDetails
+	// 	Set   bool
+	// }
+
+	optSzDataSourcesResponseDataDataSourceDetails := &api.OptSzDataSourcesResponseDataDataSourceDetails{
+		Value: *szDataSourcesResponseDataDataSourceDetails,
+		Set:   true,
+	}
+
+	// type SzDataSourcesResponseData struct {
+	// 	// The list of data source codes for the configured data sources.
+	// 	DataSources []string `json:"dataSources"`
+	// 	// The list of `SzDataSource` instances describing the data sources that are configured.
+	// 	DataSourceDetails OptSzDataSourcesResponseDataDataSourceDetails `json:"dataSourceDetails"`
+	// }
+
+	szDataSourcesResponseData := &api.SzDataSourcesResponseData{
+		DataSources:       []string{"Bobber"},
+		DataSourceDetails: *optSzDataSourcesResponseDataDataSourceDetails,
+	}
+
+	// type OptSzDataSourcesResponseData struct {
+	// 	Value SzDataSourcesResponseData
+	// 	Set   bool
+	// }
+
+	optSzDataSourcesResponseData := &api.OptSzDataSourcesResponseData{
+		Value: *szDataSourcesResponseData,
+		Set:   true,
+	}
+
+	// type SzDataSourcesResponse struct {
+	// 	Data OptSzDataSourcesResponseData `json:"data"`
+	// }
+
 	r = &api.SzDataSourcesResponse{
-		Data: api.NewOptSzDataSourcesResponseData(api.NewSzDataSourcesResponseData("bob was here")),
+		Data: *optSzDataSourcesResponseData,
 	}
 	// params.
 
