@@ -5,7 +5,6 @@ go 1.20
 require (
 	github.com/docktermj/go-http v0.0.0-20230522133317-2ced1ab627ee
 	github.com/flowchartsman/swaggerui v0.0.0-20221017034628-909ed4f3701b
-	github.com/ogen-go/ogen v0.67.0
 	github.com/senzing/g2-sdk-go v0.6.3
 	github.com/senzing/go-common v0.1.3
 	github.com/senzing/go-grpcing v0.1.0
@@ -37,6 +36,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/ogen-go/ogen v0.67.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.7 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect

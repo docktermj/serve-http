@@ -6,13 +6,10 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"reflect"
 
 	"github.com/docktermj/go-http/senzinghttpapi"
 	"github.com/docktermj/serve-http/httpservice"
 	"github.com/flowchartsman/swaggerui"
-	"github.com/ogen-go/ogen/middleware"
-	"github.com/senzing/go-logging/logger"
 	"github.com/senzing/go-logging/logging"
 	"github.com/senzing/go-observing/observer"
 	"github.com/senzing/go-observing/observerpb"
@@ -26,6 +23,7 @@ import (
 
 // HttpServerImpl is the default implementation of the HttpServer interface.
 type HttpServerImpl struct {
+	EnableSwaggerUI                bool
 	GrpcDialOptions                []grpc.DialOption
 	GrpcTarget                     string
 	logger                         logging.LoggingInterface
@@ -33,19 +31,18 @@ type HttpServerImpl struct {
 	ObserverOrigin                 string
 	Observers                      []observer.Observer
 	ObserverUrl                    string
+	OpenApiSpecification           []byte
 	Port                           int
 	SenzingEngineConfigurationJson string
 	SenzingModuleName              string
 	SenzingVerboseLogging          int
+	ServerOptions                  []senzinghttpapi.ServerOption
 	SwaggerUrlRoutePrefix          string
-	OpenApiSpecification           []byte
 }
 
 // ----------------------------------------------------------------------------
 // Constants
 // ----------------------------------------------------------------------------
-
-const exampleConstant = "examplePackage"
 
 var bobBool bool
 
@@ -102,22 +99,6 @@ func (httpServer *HttpServerImpl) createGrpcObserver(ctx context.Context, parsed
 }
 
 // ----------------------------------------------------------------------------
-// Internal methods
-// ----------------------------------------------------------------------------
-
-func (httpServer *HttpServerImpl) addResponseHeaders() middleware.Middleware {
-	return func(
-		req middleware.Request,
-		next func(req middleware.Request) (middleware.Response, error),
-	) (middleware.Response, error) {
-		fmt.Println(">>>>>> Hi there")
-		logger.Info("Handling request")
-		resp, err := next(req)
-		return resp, err
-	}
-}
-
-// ----------------------------------------------------------------------------
 // Interface methods
 // ----------------------------------------------------------------------------
 
@@ -134,6 +115,9 @@ Output
 
 func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 
+	messageTemplate := "Serving Senzing REST API on port: %d\n"
+	rootMux := http.NewServeMux()
+
 	// Create service instance.
 
 	service := &httpservice.HttpServiceImpl{
@@ -147,60 +131,32 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 		SenzingVerboseLogging:          httpServer.SenzingVerboseLogging,
 	}
 
-	// Create generated server options.
-
-	serverOptions := []senzinghttpapi.ServerOption{
-		// httpServer.addResponseHeaders,
-	}
-
-	httpServer.addResponseHeaders()
-
 	// Create generated server.
 
-	srv, err := senzinghttpapi.NewServer(service, serverOptions...)
+	srv, err := senzinghttpapi.NewServer(service, httpServer.ServerOptions...)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	rootMux := http.NewServeMux()
-	swaggerMux := swaggerui.Handler(httpServer.OpenApiSpecification)
-	swaggerFunc := swaggerMux.ServeHTTP
-	submux := http.NewServeMux()
-	// submux.HandleFunc("/swagger", swaggerFunc)
-	submux.HandleFunc("/", swaggerFunc)
+	// Enable Senzing HTTP REST API.
 
-	// Works: Senzing HTTP API.
 	rootMux.HandleFunc("/", srv.ServeHTTP)
 
-	fmt.Printf(">>>>>> %s\n", reflect.TypeOf(srv.ServeHTTP))
-	fmt.Printf(">>>>>> %s\n", reflect.TypeOf(swaggerui.Handler(httpServer.OpenApiSpecification)))
-	fmt.Printf(">>>>>> %s\n", reflect.TypeOf(swaggerui.Handler(httpServer.OpenApiSpecification).ServeHTTP))
+	// Optionally enable SwaggerUI.
 
-	// swaggerMux.HandleFunc(fmt.Sprintf("/%s/", httpServer.SwaggerUrlRoutePrefix), swaggerui.Handler(httpServer.OpenApiSpecification).ServeHTTP)
-	// swaggerMux.HandleFunc("/", swaggerui.Handler(httpServer.OpenApiSpecification).ServeHTTP)
-
-	// rootMux.Handle(fmt.Sprintf("/%s/", httpServer.SwaggerUrlRoutePrefix), http.StripPrefix(fmt.Sprintf("/%s", httpServer.SwaggerUrlRoutePrefix), swaggerMux))
-	// rootMux.Handle("/r", http.StripPrefix(fmt.Sprintf("/%s", httpServer.SwaggerUrlRoutePrefix), swaggerMux))
-
-	rootMux.Handle("/swagger/", http.StripPrefix("/swagger", submux))
-	// rootMux.Handle("/swagger/", submux)
-
-	// rootMux.HandleFunc(
-	// 	fmt.Sprintf("/%s/", httpServer.SwaggerUrlRoutePrefix),
-	// 	http.StripPrefix(
-	// 		fmt.Sprintf("/%s", httpServer.SwaggerUrlRoutePrefix),
-	// 		swaggerui.Handler(httpServer.OpenApiSpecification)),
-	// )
-
-	// http.Handle(fmt.Sprintf("/%s/", httpServer.SwaggerUrlRoutePrefix), http.StripPrefix(fmt.Sprintf("/%s", httpServer.SwaggerUrlRoutePrefix), swaggerui.Handler(httpServer.OpenApiSpecification)))
-
-	fmt.Printf("Serving on port: %d\n", httpServer.Port)
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", httpServer.Port), rootMux); err != nil {
-		log.Fatal(err)
+	if httpServer.EnableSwaggerUI {
+		swaggerMux := swaggerui.Handler(httpServer.OpenApiSpecification)
+		swaggerFunc := swaggerMux.ServeHTTP
+		submux := http.NewServeMux()
+		submux.HandleFunc("/", swaggerFunc)
+		rootMux.Handle(fmt.Sprintf("/%s/", httpServer.SwaggerUrlRoutePrefix), http.StripPrefix(fmt.Sprintf("/%s", httpServer.SwaggerUrlRoutePrefix), submux))
+		messageTemplate = fmt.Sprintf("View SwaggerUI at http://localhost:%%d/%s\n", httpServer.SwaggerUrlRoutePrefix)
 	}
 
-	fmt.Printf("Serving on port: %d\n", httpServer.Port)
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", httpServer.Port), srv); err != nil {
+	// Start service.
+
+	fmt.Printf(messageTemplate, httpServer.Port)
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", httpServer.Port), rootMux); err != nil {
 		log.Fatal(err)
 	}
 

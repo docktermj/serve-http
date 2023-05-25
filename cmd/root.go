@@ -25,6 +25,7 @@ import (
 const (
 	defaultConfiguration           string = ""
 	defaultDatabaseUrl             string = ""
+	defaultEnableSwaggerUI         bool   = false
 	defaultEngineConfigurationJson string = ""
 	defaultEngineLogLevel          int    = 0
 	defaultGrpcUrl                        = ""
@@ -52,7 +53,10 @@ var openApiSpecification []byte
 
 // Since init() is always invoked, define command line parameters.
 func init() {
+	RootCmd.Flags().Bool("enable-swagger-ui", defaultEnableSwaggerUI, fmt.Sprintf("Enable the Swagger UI service [%s]", "SENZING_TOOLS_ENABLE_SWAGGER_UI"))
+	RootCmd.Flags().Int("http-port", defaultHttpPort, fmt.Sprintf("Port to serve HTTP [%s]", "SENZING_TOOLS_HTTP_PORT"))
 	RootCmd.Flags().Int(option.EngineLogLevel, defaultEngineLogLevel, fmt.Sprintf("Log level for Senzing Engine [%s]", envar.EngineLogLevel))
+	RootCmd.Flags().String("grpc-url", defaultGrpcUrl, fmt.Sprintf("URL of Senzing gRPC service [%s]", "SENZING_TOOLS_GRPC_URL"))
 	RootCmd.Flags().String(option.Configuration, defaultConfiguration, fmt.Sprintf("Path to configuration file [%s]", envar.Configuration))
 	RootCmd.Flags().String(option.DatabaseUrl, defaultDatabaseUrl, fmt.Sprintf("URL of database to initialize [%s]", envar.DatabaseUrl))
 	RootCmd.Flags().String(option.EngineConfigurationJson, defaultEngineConfigurationJson, fmt.Sprintf("JSON string sent to Senzing's init() function [%s]", envar.EngineConfigurationJson))
@@ -60,8 +64,6 @@ func init() {
 	RootCmd.Flags().String(option.LogLevel, defaultLogLevel, fmt.Sprintf("Log level [%s]", envar.LogLevel))
 	RootCmd.Flags().String(option.ObserverOrigin, defaultObserverOrigin, fmt.Sprintf("Identify this instance to the Observer [%s]", envar.ObserverOrigin))
 	RootCmd.Flags().String(option.ObserverUrl, defaultObserverUrl, fmt.Sprintf("URL of Observer [%s]", envar.ObserverUrl))
-	RootCmd.Flags().Int("http-port", defaultHttpPort, fmt.Sprintf("Port to serve HTTP [%s]", "SENZING_TOOLS_HTTP_PORT"))
-	RootCmd.Flags().String("grpc-url", defaultGrpcUrl, fmt.Sprintf("URL of Senzing gRPC service [%s]", "SENZING_TOOLS_GRPC_URL"))
 }
 
 // If a configuration file is present, load it.
@@ -106,6 +108,19 @@ func loadOptions(cobraCommand *cobra.Command) {
 	replacer := strings.NewReplacer("-", "_")
 	viper.SetEnvKeyReplacer(replacer)
 	viper.SetEnvPrefix(constant.SetEnvPrefix)
+
+	// Bools
+
+	boolOptions := map[string]bool{
+		"enable-swagger-ui": defaultEnableSwaggerUI,
+	}
+	for optionKey, optionValue := range boolOptions {
+		viper.SetDefault(optionKey, optionValue)
+		err = viper.BindPFlag(optionKey, cobraCommand.Flags().Lookup(optionKey))
+		if err != nil {
+			panic(err)
+		}
+	}
 
 	// Ints
 
@@ -191,28 +206,18 @@ func RunE(_ *cobra.Command, _ []string) error {
 
 	// Create object and Serve.
 
-	// swaggerServer := &swaggerui.SwaggerUiServerImpl{
-	// 	Port:                  viper.GetInt("http-port"),
-	// 	SwaggerUrlRoutePrefix: "swagger",
-	// 	OpenApiSpecification:  openApiSpecification,
-	// }
-
-	// err = swaggerServer.Serve(ctx)
-	// return err
-
-	// Create object and Serve.
-
 	httpServer := &httpserver.HttpServerImpl{
+		EnableSwaggerUI:                viper.GetBool("enable-swagger-ui"),
 		GrpcDialOptions:                grpcDialOptions,
 		GrpcTarget:                     grpcTarget,
 		LogLevelName:                   viper.GetString(option.LogLevel),
 		ObserverOrigin:                 viper.GetString(option.ObserverOrigin),
 		ObserverUrl:                    viper.GetString(option.ObserverUrl),
+		OpenApiSpecification:           openApiSpecification,
 		Port:                           viper.GetInt("http-port"),
 		SenzingEngineConfigurationJson: senzingEngineConfigurationJson,
 		SenzingModuleName:              viper.GetString(option.EngineModuleName),
 		SenzingVerboseLogging:          viper.GetInt(option.EngineLogLevel),
-		OpenApiSpecification:           openApiSpecification,
 		SwaggerUrlRoutePrefix:          "swagger",
 	}
 	err = httpServer.Serve(ctx)
