@@ -16,9 +16,9 @@ import (
 
 // HttpServiceImpl is...
 type SwaggerUiServerImpl struct {
-	Prefix               string
-	Port                 int
-	OpenApiSpecification []byte
+	SwaggerUrlRoutePrefix string
+	Port                  int
+	OpenApiSpecification  []byte
 }
 
 // ----------------------------------------------------------------------------
@@ -34,8 +34,8 @@ Input
 
 func (server *SwaggerUiServerImpl) Serve(ctx context.Context) error {
 	var err error = nil
-	http.Handle(fmt.Sprintf("/%s/", server.Prefix), http.StripPrefix(fmt.Sprintf("/%s", server.Prefix), swaggerui.Handler(server.OpenApiSpecification)))
-	fmt.Printf("Serving on port: %d\n", server.Port)
+	http.Handle(fmt.Sprintf("/%s/", server.SwaggerUrlRoutePrefix), http.StripPrefix(fmt.Sprintf("/%s", server.SwaggerUrlRoutePrefix), swaggerui.Handler(server.OpenApiSpecification)))
+	fmt.Printf("SwaggerUI visible at http://localhost:%d/swagger\n", server.Port)
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", server.Port), nil); err != nil {
 		log.Fatal(err)
 	}

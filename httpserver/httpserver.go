@@ -6,9 +6,11 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"reflect"
 
 	"github.com/docktermj/go-http/senzinghttpapi"
 	"github.com/docktermj/serve-http/httpservice"
+	"github.com/flowchartsman/swaggerui"
 	"github.com/ogen-go/ogen/middleware"
 	"github.com/senzing/go-logging/logger"
 	"github.com/senzing/go-logging/logging"
@@ -35,6 +37,8 @@ type HttpServerImpl struct {
 	SenzingEngineConfigurationJson string
 	SenzingModuleName              string
 	SenzingVerboseLogging          int
+	SwaggerUrlRoutePrefix          string
+	OpenApiSpecification           []byte
 }
 
 // ----------------------------------------------------------------------------
@@ -155,6 +159,43 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 
 	srv, err := senzinghttpapi.NewServer(service, serverOptions...)
 	if err != nil {
+		log.Fatal(err)
+	}
+
+	rootMux := http.NewServeMux()
+	swaggerMux := swaggerui.Handler(httpServer.OpenApiSpecification)
+	swaggerFunc := swaggerMux.ServeHTTP
+	submux := http.NewServeMux()
+	// submux.HandleFunc("/swagger", swaggerFunc)
+	submux.HandleFunc("/", swaggerFunc)
+
+	// Works: Senzing HTTP API.
+	rootMux.HandleFunc("/", srv.ServeHTTP)
+
+	fmt.Printf(">>>>>> %s\n", reflect.TypeOf(srv.ServeHTTP))
+	fmt.Printf(">>>>>> %s\n", reflect.TypeOf(swaggerui.Handler(httpServer.OpenApiSpecification)))
+	fmt.Printf(">>>>>> %s\n", reflect.TypeOf(swaggerui.Handler(httpServer.OpenApiSpecification).ServeHTTP))
+
+	// swaggerMux.HandleFunc(fmt.Sprintf("/%s/", httpServer.SwaggerUrlRoutePrefix), swaggerui.Handler(httpServer.OpenApiSpecification).ServeHTTP)
+	// swaggerMux.HandleFunc("/", swaggerui.Handler(httpServer.OpenApiSpecification).ServeHTTP)
+
+	// rootMux.Handle(fmt.Sprintf("/%s/", httpServer.SwaggerUrlRoutePrefix), http.StripPrefix(fmt.Sprintf("/%s", httpServer.SwaggerUrlRoutePrefix), swaggerMux))
+	// rootMux.Handle("/r", http.StripPrefix(fmt.Sprintf("/%s", httpServer.SwaggerUrlRoutePrefix), swaggerMux))
+
+	rootMux.Handle("/swagger/", http.StripPrefix("/swagger", submux))
+	// rootMux.Handle("/swagger/", submux)
+
+	// rootMux.HandleFunc(
+	// 	fmt.Sprintf("/%s/", httpServer.SwaggerUrlRoutePrefix),
+	// 	http.StripPrefix(
+	// 		fmt.Sprintf("/%s", httpServer.SwaggerUrlRoutePrefix),
+	// 		swaggerui.Handler(httpServer.OpenApiSpecification)),
+	// )
+
+	// http.Handle(fmt.Sprintf("/%s/", httpServer.SwaggerUrlRoutePrefix), http.StripPrefix(fmt.Sprintf("/%s", httpServer.SwaggerUrlRoutePrefix), swaggerui.Handler(httpServer.OpenApiSpecification)))
+
+	fmt.Printf("Serving on port: %d\n", httpServer.Port)
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", httpServer.Port), rootMux); err != nil {
 		log.Fatal(err)
 	}
 

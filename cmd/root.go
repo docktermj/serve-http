@@ -10,14 +10,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docktermj/serve-http/swaggerui"
+	"github.com/docktermj/serve-http/httpserver"
 	"github.com/senzing/go-common/g2engineconfigurationjson"
+	"github.com/senzing/go-grpcing/grpcurl"
 	"github.com/senzing/senzing-tools/constant"
 	"github.com/senzing/senzing-tools/envar"
 	"github.com/senzing/senzing-tools/helper"
 	"github.com/senzing/senzing-tools/option"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -177,42 +179,44 @@ func RunE(_ *cobra.Command, _ []string) error {
 
 	// Determine if gRPC is being used.
 
-	// grpcUrl := viper.GetString("grpc-url")
-	// grpcTarget := ""
-	// grpcDialOptions := []grpc.DialOption{}
-	// if len(grpcUrl) > 0 {
-	// 	grpcTarget, grpcDialOptions, err = grpcurl.Parse(ctx, grpcUrl)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
-
-	// Create object and Serve.
-
-	swaggerServer := &swaggerui.SwaggerUiServerImpl{
-		Port:                 viper.GetInt("http-port"),
-		Prefix:               "swagger",
-		OpenApiSpecification: openApiSpecification,
+	grpcUrl := viper.GetString("grpc-url")
+	grpcTarget := ""
+	grpcDialOptions := []grpc.DialOption{}
+	if len(grpcUrl) > 0 {
+		grpcTarget, grpcDialOptions, err = grpcurl.Parse(ctx, grpcUrl)
+		if err != nil {
+			return err
+		}
 	}
 
-	err = swaggerServer.Serve(ctx)
-	return err
+	// Create object and Serve.
+
+	// swaggerServer := &swaggerui.SwaggerUiServerImpl{
+	// 	Port:                  viper.GetInt("http-port"),
+	// 	SwaggerUrlRoutePrefix: "swagger",
+	// 	OpenApiSpecification:  openApiSpecification,
+	// }
+
+	// err = swaggerServer.Serve(ctx)
+	// return err
 
 	// Create object and Serve.
 
-	// httpServer := &httpserver.HttpServerImpl{
-	// 	GrpcDialOptions:                grpcDialOptions,
-	// 	GrpcTarget:                     grpcTarget,
-	// 	LogLevelName:                   viper.GetString(option.LogLevel),
-	// 	ObserverOrigin:                 viper.GetString(option.ObserverOrigin),
-	// 	ObserverUrl:                    viper.GetString(option.ObserverUrl),
-	// 	Port:                           viper.GetInt("http-port"),
-	// 	SenzingEngineConfigurationJson: senzingEngineConfigurationJson,
-	// 	SenzingModuleName:              viper.GetString(option.EngineModuleName),
-	// 	SenzingVerboseLogging:          viper.GetInt(option.EngineLogLevel),
-	// }
-	// err = httpServer.Serve(ctx)
-	// return err
+	httpServer := &httpserver.HttpServerImpl{
+		GrpcDialOptions:                grpcDialOptions,
+		GrpcTarget:                     grpcTarget,
+		LogLevelName:                   viper.GetString(option.LogLevel),
+		ObserverOrigin:                 viper.GetString(option.ObserverOrigin),
+		ObserverUrl:                    viper.GetString(option.ObserverUrl),
+		Port:                           viper.GetInt("http-port"),
+		SenzingEngineConfigurationJson: senzingEngineConfigurationJson,
+		SenzingModuleName:              viper.GetString(option.EngineModuleName),
+		SenzingVerboseLogging:          viper.GetInt(option.EngineLogLevel),
+		OpenApiSpecification:           openApiSpecification,
+		SwaggerUrlRoutePrefix:          "swagger",
+	}
+	err = httpServer.Serve(ctx)
+	return err
 }
 
 // Used in construction of cobra.Command
