@@ -24,6 +24,8 @@ import (
 
 // HttpServerImpl is the default implementation of the HttpServer interface.
 type HttpServerImpl struct {
+	GrpcDialOptions                []grpc.DialOption
+	GrpcTarget                     string
 	logger                         logging.LoggingInterface
 	LogLevelName                   string
 	ObserverOrigin                 string
@@ -40,6 +42,8 @@ type HttpServerImpl struct {
 // ----------------------------------------------------------------------------
 
 const exampleConstant = "examplePackage"
+
+var bobBool bool
 
 // ----------------------------------------------------------------------------
 // Internal methods
@@ -80,9 +84,9 @@ func (httpServer *HttpServerImpl) createGrpcObserver(ctx context.Context, parsed
 	target := fmt.Sprintf("%s:%s", parsedUrl.Hostname(), port)
 
 	// TODO: Allow specification of options from ObserverUrl/parsedUrl
-	grpcOptions := grpc.WithTransportCredentials(insecure.NewCredentials())
+	grpcDialOptions := grpc.WithTransportCredentials(insecure.NewCredentials())
 
-	grpcConnection, err := grpc.Dial(target, grpcOptions)
+	grpcConnection, err := grpc.Dial(target, grpcDialOptions)
 	if err != nil {
 		return result, err
 	}
@@ -128,7 +132,16 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 
 	// Create service instance.
 
-	service := &httpservice.HttpServiceImpl{}
+	service := &httpservice.HttpServiceImpl{
+		GrpcDialOptions:                httpServer.GrpcDialOptions,
+		GrpcTarget:                     httpServer.GrpcTarget,
+		LogLevelName:                   httpServer.LogLevelName,
+		ObserverOrigin:                 httpServer.ObserverOrigin,
+		ObserverUrl:                    httpServer.ObserverUrl,
+		SenzingEngineConfigurationJson: httpServer.SenzingEngineConfigurationJson,
+		SenzingModuleName:              httpServer.SenzingModuleName,
+		SenzingVerboseLogging:          httpServer.SenzingVerboseLogging,
+	}
 
 	// Create generated server options.
 

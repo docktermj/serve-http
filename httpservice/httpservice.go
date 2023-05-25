@@ -2,9 +2,16 @@ package httpservice
 
 import (
 	"context"
+	// "fmt"
+	"sync"
 	"time"
 
 	api "github.com/docktermj/go-http/senzinghttpapi"
+	"github.com/senzing/g2-sdk-go/g2api"
+	"github.com/senzing/go-logging/logging"
+	"github.com/senzing/go-observing/observer"
+	"github.com/senzing/go-sdk-abstract-factory/factory"
+	"google.golang.org/grpc"
 )
 
 // ----------------------------------------------------------------------------
@@ -14,11 +21,98 @@ import (
 // HttpServiceImpl is...
 type HttpServiceImpl struct {
 	api.UnimplementedHandler
+	abstractFactory                factory.SdkAbstractFactory
+	abstractFactorySyncOnce        sync.Once
+	g2configSingleton              g2api.G2config
+	g2configSyncOnce               sync.Once
+	GrpcTarget                     string
+	GrpcDialOptions                []grpc.DialOption
+	logger                         logging.LoggingInterface
+	LogLevelName                   string
+	ObserverOrigin                 string
+	Observers                      []observer.Observer
+	ObserverUrl                    string
+	Port                           int
+	SenzingEngineConfigurationJson string
+	SenzingModuleName              string
+	SenzingVerboseLogging          int
 }
 
 // ----------------------------------------------------------------------------
 // internal methods
 // ----------------------------------------------------------------------------
+
+// --- Logging ----------------------------------------------------------------
+
+// Get the Logger singleton.
+func (httpService *HttpServiceImpl) getLogger() logging.LoggingInterface {
+	var err error = nil
+	if httpService.logger == nil {
+		loggerOptions := []interface{}{
+			&logging.OptionCallerSkip{Value: 3},
+		}
+		httpService.logger, err = logging.NewSenzingToolsLogger(ComponentId, IdMessages, loggerOptions...)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return httpService.logger
+}
+
+// Trace method entry.
+func (httpService *HttpServiceImpl) traceEntry(messageNumber int, details ...interface{}) {
+	httpService.getLogger().Log(messageNumber, details...)
+}
+
+// Trace method exit.
+func (httpService *HttpServiceImpl) traceExit(messageNumber int, details ...interface{}) {
+	httpService.getLogger().Log(messageNumber, details...)
+}
+
+// --- Errors -----------------------------------------------------------------
+
+// Create error.
+func (httpService *HttpServiceImpl) error(messageNumber int, details ...interface{}) error {
+	return httpService.getLogger().NewError(messageNumber, details...)
+}
+
+// --- Services ---------------------------------------------------------------
+
+func (httpService *HttpServiceImpl) getAbstractFactory() factory.SdkAbstractFactory {
+	httpService.abstractFactorySyncOnce.Do(func() {
+		if len(httpService.GrpcTarget) == 0 {
+			httpService.abstractFactory = &factory.SdkAbstractFactoryImpl{}
+		} else {
+			// TODO: Make a call to go-grpcing.getGrpcAddress() and go-grpcing.
+			httpService.abstractFactory = &factory.SdkAbstractFactoryImpl{
+				GrpcTarget:      httpService.GrpcTarget,
+				GrpcDialOptions: httpService.GrpcDialOptions,
+			}
+		}
+	})
+	return httpService.abstractFactory
+}
+
+// Singleton pattern for g2config.
+// See https://medium.com/golang-issue/how-singleton-pattern-works-with-golang-2fdd61cd5a7f
+func (httpService *HttpServiceImpl) getG2config(ctx context.Context) g2api.G2config {
+	var err error = nil
+	httpService.g2configSyncOnce.Do(func() {
+		httpService.g2configSingleton, err = httpService.getAbstractFactory().GetG2config(ctx)
+		if err != nil {
+			panic(err)
+		}
+		if httpService.g2configSingleton.GetSdkId(ctx) == factory.ImplementedByBase {
+			err = httpService.g2configSingleton.Init(ctx, httpService.SenzingModuleName, httpService.SenzingEngineConfigurationJson, httpService.SenzingVerboseLogging)
+			if err != nil {
+				panic(err)
+			}
+		}
+	})
+	return httpService.g2configSingleton
+}
+
+// --- Misc -------------------------------------------------------------------
 
 func (httpService *HttpServiceImpl) getOptSzLinks() api.OptSzLinks {
 	var result api.OptSzLinks
@@ -64,6 +158,12 @@ func (httpService *HttpServiceImpl) AddDataSources(ctx context.Context, req api.
 	// withRaw := params.WithRaw
 
 	// TODO: Call Senzing
+
+	// g2Config := httpService.getG2config(ctx)
+	// configHandle, err := g2Config.Create(ctx)
+	// inputJson := fmt.Sprintf(`{"DSRC_CODE": "%s"}`, params.DataSource)
+	// response, err := g2Config.AddDataSource(ctx, configHandle, inputJson)
+	// err = g2Config.Close(ctx, configHandle)
 
 	// type SzDataSource struct {
 	// 	// The data source code.

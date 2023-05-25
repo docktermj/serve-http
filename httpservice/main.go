@@ -17,14 +17,20 @@ type HttpService interface {
 // Constants
 // ----------------------------------------------------------------------------
 
-// An example constant.
-const ExampleConstant = 1
+// Identfier of the  package found messages having the format "senzing-6503xxxx".
+const ComponentId = 9999
+
+// Log message prefix.
+const Prefix = "serve-http.httpservice."
 
 // ----------------------------------------------------------------------------
 // Variables
 // ----------------------------------------------------------------------------
 
-// An example variable.
-var ExampleVariable = map[int]string{
-	1: "Just a string",
+// Message templates for g2config implementations.
+var IdMessages = map[int]string{
+	10: "Enter " + Prefix + "InitializeSenzing().",
 }
+
+// Status strings for specific messages.
+var IdStatuses = map[int]string{}

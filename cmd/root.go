@@ -4,11 +4,13 @@ package cmd
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
-	"github.com/docktermj/serve-http/httpserver"
+	"github.com/docktermj/serve-http/swaggerui"
 	"github.com/senzing/go-common/g2engineconfigurationjson"
 	"github.com/senzing/senzing-tools/constant"
 	"github.com/senzing/senzing-tools/envar"
@@ -23,6 +25,7 @@ const (
 	defaultDatabaseUrl             string = ""
 	defaultEngineConfigurationJson string = ""
 	defaultEngineLogLevel          int    = 0
+	defaultGrpcUrl                        = ""
 	defaultHttpPort                int    = 8261
 	defaultLogLevel                string = "INFO"
 	defaultObserverOrigin          string = ""
@@ -34,6 +37,13 @@ serve-http long description.
 	`
 )
 
+var (
+	defaultEngineModuleName string = fmt.Sprintf("serve-http-%d", time.Now().Unix())
+)
+
+//go:embed senzing-openapi.json
+var openApiSpecification []byte
+
 // ----------------------------------------------------------------------------
 // Private functions
 // ----------------------------------------------------------------------------
@@ -44,10 +54,12 @@ func init() {
 	RootCmd.Flags().String(option.Configuration, defaultConfiguration, fmt.Sprintf("Path to configuration file [%s]", envar.Configuration))
 	RootCmd.Flags().String(option.DatabaseUrl, defaultDatabaseUrl, fmt.Sprintf("URL of database to initialize [%s]", envar.DatabaseUrl))
 	RootCmd.Flags().String(option.EngineConfigurationJson, defaultEngineConfigurationJson, fmt.Sprintf("JSON string sent to Senzing's init() function [%s]", envar.EngineConfigurationJson))
+	RootCmd.Flags().String(option.EngineModuleName, defaultEngineModuleName, fmt.Sprintf("Identifier given to the Senzing engine [%s]", envar.EngineModuleName))
 	RootCmd.Flags().String(option.LogLevel, defaultLogLevel, fmt.Sprintf("Log level [%s]", envar.LogLevel))
 	RootCmd.Flags().String(option.ObserverOrigin, defaultObserverOrigin, fmt.Sprintf("Identify this instance to the Observer [%s]", envar.ObserverOrigin))
 	RootCmd.Flags().String(option.ObserverUrl, defaultObserverUrl, fmt.Sprintf("URL of Observer [%s]", envar.ObserverUrl))
 	RootCmd.Flags().Int("http-port", defaultHttpPort, fmt.Sprintf("Port to serve HTTP [%s]", "SENZING_TOOLS_HTTP_PORT"))
+	RootCmd.Flags().String("grpc-url", defaultGrpcUrl, fmt.Sprintf("URL of Senzing gRPC service [%s]", "SENZING_TOOLS_GRPC_URL"))
 }
 
 // If a configuration file is present, load it.
@@ -113,9 +125,11 @@ func loadOptions(cobraCommand *cobra.Command) {
 		option.Configuration:           defaultConfiguration,
 		option.DatabaseUrl:             defaultDatabaseUrl,
 		option.EngineConfigurationJson: defaultEngineConfigurationJson,
+		option.EngineModuleName:        defaultEngineModuleName,
 		option.LogLevel:                defaultLogLevel,
 		option.ObserverOrigin:          defaultObserverOrigin,
 		option.ObserverUrl:             defaultObserverUrl,
+		"grpc-url":                     defaultGrpcUrl,
 	}
 	for optionKey, optionValue := range stringOptions {
 		viper.SetDefault(optionKey, optionValue)
@@ -151,7 +165,7 @@ func RunE(_ *cobra.Command, _ []string) error {
 	var err error = nil
 	ctx := context.TODO()
 
-	logLevelName := viper.GetString(option.LogLevel)
+	// Build senzingEngineConfigurationJson.
 
 	senzingEngineConfigurationJson := viper.GetString(option.EngineConfigurationJson)
 	if len(senzingEngineConfigurationJson) == 0 {
@@ -161,17 +175,44 @@ func RunE(_ *cobra.Command, _ []string) error {
 		}
 	}
 
-	httpServer := &httpserver.HttpServerImpl{
-		LogLevelName:                   logLevelName,
-		ObserverOrigin:                 viper.GetString(option.ObserverOrigin),
-		ObserverUrl:                    viper.GetString(option.ObserverUrl),
-		Port:                           viper.GetInt("http-port"),
-		SenzingEngineConfigurationJson: senzingEngineConfigurationJson,
-		SenzingModuleName:              viper.GetString(option.EngineModuleName),
-		SenzingVerboseLogging:          viper.GetInt(option.EngineLogLevel),
+	// Determine if gRPC is being used.
+
+	// grpcUrl := viper.GetString("grpc-url")
+	// grpcTarget := ""
+	// grpcDialOptions := []grpc.DialOption{}
+	// if len(grpcUrl) > 0 {
+	// 	grpcTarget, grpcDialOptions, err = grpcurl.Parse(ctx, grpcUrl)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
+
+	// Create object and Serve.
+
+	swaggerServer := &swaggerui.SwaggerUiServerImpl{
+		Port:                 viper.GetInt("http-port"),
+		Prefix:               "swagger",
+		OpenApiSpecification: openApiSpecification,
 	}
-	err = httpServer.Serve(ctx)
+
+	err = swaggerServer.Serve(ctx)
 	return err
+
+	// Create object and Serve.
+
+	// httpServer := &httpserver.HttpServerImpl{
+	// 	GrpcDialOptions:                grpcDialOptions,
+	// 	GrpcTarget:                     grpcTarget,
+	// 	LogLevelName:                   viper.GetString(option.LogLevel),
+	// 	ObserverOrigin:                 viper.GetString(option.ObserverOrigin),
+	// 	ObserverUrl:                    viper.GetString(option.ObserverUrl),
+	// 	Port:                           viper.GetInt("http-port"),
+	// 	SenzingEngineConfigurationJson: senzingEngineConfigurationJson,
+	// 	SenzingModuleName:              viper.GetString(option.EngineModuleName),
+	// 	SenzingVerboseLogging:          viper.GetInt(option.EngineLogLevel),
+	// }
+	// err = httpServer.Serve(ctx)
+	// return err
 }
 
 // Used in construction of cobra.Command
