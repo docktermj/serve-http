@@ -67,7 +67,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace (
-	github.com/docktermj/go-http v0.0.0-20230522133317-2ced1ab627ee => /home/senzing/docktermj.git/go-http
-	github.com/senzing/go-sdk-abstract-factory v0.2.4 => /home/senzing/senzing.git/go-sdk-abstract-factory
-)
+replace github.com/docktermj/go-http v0.0.0-20230522133317-2ced1ab627ee => /home/senzing/docktermj.git/go-http

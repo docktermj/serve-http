@@ -227,13 +227,12 @@ func (httpService *HttpServiceImpl) AddDataSources(ctx context.Context, req api.
 		httpService.log(9999, dataSource, withRaw, err)
 	}
 
-	configurationHandle, err := g2Config.Create(ctx)
 	configurationString, err := g2Configmgr.GetConfig(ctx, configID)
 	if err != nil {
 		httpService.log(9999, dataSource, withRaw, err)
 	}
 
-	err = g2Config.Load(ctx, configurationHandle, configurationString)
+	configurationHandle, err := g2Config.Load(ctx, configurationString)
 	if err != nil {
 		httpService.log(9999, dataSource, withRaw, err)
 	}
