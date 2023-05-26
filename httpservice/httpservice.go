@@ -2,6 +2,9 @@ package httpservice
 
 import (
 	"context"
+	"fmt"
+	"reflect"
+
 	// "fmt"
 	"sync"
 	"time"
@@ -23,20 +26,36 @@ type HttpServiceImpl struct {
 	api.UnimplementedHandler
 	abstractFactory                factory.SdkAbstractFactory
 	abstractFactorySyncOnce        sync.Once
+	g2configmgrSingleton           g2api.G2configmgr
+	g2configmgrSyncOnce            sync.Once
 	g2configSingleton              g2api.G2config
 	g2configSyncOnce               sync.Once
-	GrpcTarget                     string
 	GrpcDialOptions                []grpc.DialOption
+	GrpcTarget                     string
+	isTrace                        bool
 	logger                         logging.LoggingInterface
 	LogLevelName                   string
 	ObserverOrigin                 string
 	Observers                      []observer.Observer
-	ObserverUrl                    string
 	Port                           int
 	SenzingEngineConfigurationJson string
 	SenzingModuleName              string
 	SenzingVerboseLogging          int
 }
+
+// ----------------------------------------------------------------------------
+// Variables
+// ----------------------------------------------------------------------------
+
+var debugOptions []interface{} = []interface{}{
+	&logging.OptionCallerSkip{Value: 5},
+}
+
+var traceOptions []interface{} = []interface{}{
+	&logging.OptionCallerSkip{Value: 5},
+}
+
+var defaultModuleName string = "init-database"
 
 // ----------------------------------------------------------------------------
 // internal methods
@@ -57,6 +76,17 @@ func (httpService *HttpServiceImpl) getLogger() logging.LoggingInterface {
 		}
 	}
 	return httpService.logger
+}
+
+// Log message.
+func (httpService *HttpServiceImpl) log(messageNumber int, details ...interface{}) {
+	httpService.getLogger().Log(messageNumber, details...)
+}
+
+// Debug.
+func (httpService *HttpServiceImpl) debug(messageNumber int, details ...interface{}) {
+	details = append(details, debugOptions...)
+	httpService.getLogger().Log(messageNumber, details...)
 }
 
 // Trace method entry.
@@ -83,10 +113,11 @@ func (httpService *HttpServiceImpl) getAbstractFactory() factory.SdkAbstractFact
 		if len(httpService.GrpcTarget) == 0 {
 			httpService.abstractFactory = &factory.SdkAbstractFactoryImpl{}
 		} else {
-			// TODO: Make a call to go-grpcing.getGrpcAddress() and go-grpcing.
 			httpService.abstractFactory = &factory.SdkAbstractFactoryImpl{
-				GrpcTarget:      httpService.GrpcTarget,
 				GrpcDialOptions: httpService.GrpcDialOptions,
+				GrpcTarget:      httpService.GrpcTarget,
+				ObserverOrigin:  httpService.ObserverOrigin,
+				Observers:       httpService.Observers,
 			}
 		}
 	})
@@ -110,6 +141,25 @@ func (httpService *HttpServiceImpl) getG2config(ctx context.Context) g2api.G2con
 		}
 	})
 	return httpService.g2configSingleton
+}
+
+// Singleton pattern for g2config.
+// See https://medium.com/golang-issue/how-singleton-pattern-works-with-golang-2fdd61cd5a7f
+func (httpService *HttpServiceImpl) getG2configmgr(ctx context.Context) g2api.G2configmgr {
+	var err error = nil
+	httpService.g2configmgrSyncOnce.Do(func() {
+		httpService.g2configmgrSingleton, err = httpService.getAbstractFactory().GetG2configmgr(ctx)
+		if err != nil {
+			panic(err)
+		}
+		if httpService.g2configmgrSingleton.GetSdkId(ctx) == factory.ImplementedByBase {
+			err = httpService.g2configmgrSingleton.Init(ctx, httpService.SenzingModuleName, httpService.SenzingEngineConfigurationJson, httpService.SenzingVerboseLogging)
+			if err != nil {
+				panic(err)
+			}
+		}
+	})
+	return httpService.g2configmgrSingleton
 }
 
 // --- Misc -------------------------------------------------------------------
@@ -151,19 +201,85 @@ func (httpService *HttpServiceImpl) getOptSzMeta() api.OptSzMeta {
 
 func (httpService *HttpServiceImpl) AddDataSources(ctx context.Context, req api.AddDataSourcesReq, params api.AddDataSourcesParams) (r api.AddDataSourcesRes, _ error) {
 	var err error = nil
+	if httpService.isTrace {
+		entryTime := time.Now()
+		httpService.traceEntry(99)
+		defer func() { httpService.traceExit(99, err, time.Since(entryTime)) }()
+	}
 
-	// URl parameters.
+	// URL parameters.
 
-	// dataSource := params.DataSource
-	// withRaw := params.WithRaw
+	dataSource := params.DataSource
+	withRaw := params.WithRaw
 
-	// TODO: Call Senzing
+	fmt.Printf(">>>>>> %+v\n", params)
+	fmt.Printf(">>>>>> type: %s   value: %v\n", reflect.TypeOf(params.DataSource), params.DataSource)
 
-	// g2Config := httpService.getG2config(ctx)
-	// configHandle, err := g2Config.Create(ctx)
-	// inputJson := fmt.Sprintf(`{"DSRC_CODE": "%s"}`, params.DataSource)
-	// response, err := g2Config.AddDataSource(ctx, configHandle, inputJson)
-	// err = g2Config.Close(ctx, configHandle)
+	// Get Senzing resources.
+
+	g2Config := httpService.getG2config(ctx)
+	g2Configmgr := httpService.getG2configmgr(ctx)
+
+	// Get an in-memory version of the existing Senzing configuration.
+
+	configID, err := g2Configmgr.GetDefaultConfigID(ctx)
+	if err != nil {
+		httpService.log(9999, dataSource, withRaw, err)
+	}
+
+	configurationHandle, err := g2Config.Create(ctx)
+	configurationString, err := g2Configmgr.GetConfig(ctx, configID)
+	if err != nil {
+		httpService.log(9999, dataSource, withRaw, err)
+	}
+
+	err = g2Config.Load(ctx, configurationHandle, configurationString)
+	if err != nil {
+		httpService.log(9999, dataSource, withRaw, err)
+	}
+
+	// Add DataSouces to in-memory version of Senzing Configuration.
+
+	sdkResponses := []string{}
+	for _, dataSource := range params.DataSource {
+		sdkRequest := fmt.Sprintf(`{"DSRC_CODE": "%s"}`, dataSource)
+
+		fmt.Printf(">>>>>> sdkRequest: %s; configurationHandle: %v\n", sdkRequest, configurationHandle)
+
+		sdkResponse, err := g2Config.AddDataSource(ctx, configurationHandle, sdkRequest)
+		if err != nil {
+			return r, err
+		}
+		sdkResponses = append(sdkResponses, sdkResponse)
+	}
+
+	// Persist in-memory Senzing Configuration to Senzing database SYS_CFG table.
+
+	newConfigurationString, err := g2Config.Save(ctx, configurationHandle)
+	if err != nil {
+		httpService.log(9999, dataSource, withRaw, err)
+	}
+	newConfigId, err := g2Configmgr.AddConfig(ctx, newConfigurationString, "FIXME: description")
+	if err != nil {
+		httpService.log(9999, dataSource, withRaw, err)
+	}
+	err = g2Configmgr.SetDefaultConfigID(ctx, newConfigId)
+	if err != nil {
+		httpService.log(9999, dataSource, withRaw, err)
+	}
+
+	// Retrieve all DataSources
+
+	rawData, err := g2Config.ListDataSources(ctx, configurationHandle)
+	if err != nil {
+		return r, err
+	}
+
+	fmt.Printf(">>>>>> ListDataSources: %s\n", rawData)
+
+	err = g2Config.Close(ctx, configurationHandle)
+
+	fmt.Println(sdkResponses)
 
 	// type SzDataSource struct {
 	// 	// The data source code.
@@ -235,7 +351,7 @@ func (httpService *HttpServiceImpl) AddDataSources(ctx context.Context, req api.
 					Set: true,
 					Value: api.SzDataSourcesResponseDataDataSourceDetails{
 						"xxxBob": api.SzDataSource{
-							DataSourceCode: api.NewOptString("DataSourceCodeBob"),
+							DataSourceCode: api.NewOptString("BOBBER5"),
 							DataSourceId:   api.NewOptNilInt32(1),
 						},
 					},

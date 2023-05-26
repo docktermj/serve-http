@@ -13,6 +13,7 @@ import (
 	"github.com/docktermj/serve-http/httpserver"
 	"github.com/senzing/go-common/g2engineconfigurationjson"
 	"github.com/senzing/go-grpcing/grpcurl"
+	"github.com/senzing/go-observing/observer"
 	"github.com/senzing/senzing-tools/constant"
 	"github.com/senzing/senzing-tools/envar"
 	"github.com/senzing/senzing-tools/helper"
@@ -31,7 +32,7 @@ const (
 	defaultGrpcUrl                        = ""
 	defaultHttpPort                int    = 8261
 	defaultLogLevel                string = "INFO"
-	defaultObserverOrigin          string = ""
+	defaultObserverOrigin          string = "serve-http"
 	defaultObserverUrl             string = ""
 	Short                          string = "serve-http short description"
 	Use                            string = "serve-http"
@@ -204,6 +205,11 @@ func RunE(_ *cobra.Command, _ []string) error {
 		}
 	}
 
+	// Build observers.
+	//  viper.GetString(option.ObserverUrl),
+
+	observers := []observer.Observer{}
+
 	// Create object and Serve.
 
 	httpServer := &httpserver.HttpServerImpl{
@@ -212,7 +218,7 @@ func RunE(_ *cobra.Command, _ []string) error {
 		GrpcTarget:                     grpcTarget,
 		LogLevelName:                   viper.GetString(option.LogLevel),
 		ObserverOrigin:                 viper.GetString(option.ObserverOrigin),
-		ObserverUrl:                    viper.GetString(option.ObserverUrl),
+		Observers:                      observers,
 		OpenApiSpecification:           openApiSpecification,
 		Port:                           viper.GetInt("http-port"),
 		SenzingEngineConfigurationJson: senzingEngineConfigurationJson,
