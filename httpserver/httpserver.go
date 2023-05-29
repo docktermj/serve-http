@@ -35,6 +35,7 @@ type HttpServerImpl struct {
 	SenzingVerboseLogging          int
 	ServerOptions                  []senzinghttpapi.ServerOption
 	SwaggerUrlRoutePrefix          string
+	XtermUrlRoutePrefix            string
 }
 
 // ----------------------------------------------------------------------------
@@ -54,6 +55,7 @@ Output
 
 func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 	var err error = nil
+	var userMessage string = ""
 	rootMux := http.NewServeMux()
 
 	// Create Senzing HTTP REST API service instance.
@@ -69,8 +71,6 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 		SenzingVerboseLogging:          httpServer.SenzingVerboseLogging,
 	}
 
-	userMessage := ""
-
 	// Enable Senzing HTTP REST API.
 
 	if httpServer.EnableAll || httpServer.EnableSenzingRestAPI {
@@ -79,7 +79,7 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 			log.Fatal(err)
 		}
 		rootMux.HandleFunc("/", srv.ServeHTTP)
-		userMessage = fmt.Sprintf("Serving Senzing REST API on port: %d\n", httpServer.Port)
+		userMessage = fmt.Sprintf("%sServing Senzing REST API at http://localhost:%d/\n", userMessage, httpServer.Port)
 	}
 
 	// Enable SwaggerUI.
@@ -90,12 +90,18 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 		submux := http.NewServeMux()
 		submux.HandleFunc("/", swaggerFunc)
 		rootMux.Handle(fmt.Sprintf("/%s/", httpServer.SwaggerUrlRoutePrefix), http.StripPrefix(fmt.Sprintf("/%s", httpServer.SwaggerUrlRoutePrefix), submux))
-		userMessage = fmt.Sprintf("%sView SwaggerUI at http://localhost:%d/%s\n", userMessage, httpServer.Port, httpServer.SwaggerUrlRoutePrefix)
+		userMessage = fmt.Sprintf("%sServing SwaggerUI at http://localhost:%d/%s\n", userMessage, httpServer.Port, httpServer.SwaggerUrlRoutePrefix)
 	}
 
 	// Enable Xterm.
 
 	if httpServer.EnableAll || httpServer.EnableXterm {
+		userMessage = fmt.Sprintf("%sServing XTerm at http://localhost:%d/%s\n", userMessage, httpServer.Port, httpServer.XtermUrlRoutePrefix)
+
+	}
+
+	if len(userMessage) == 0 {
+		userMessage = fmt.Sprintf("Serving on port: %d\n", httpServer.Port)
 	}
 
 	// Start service.

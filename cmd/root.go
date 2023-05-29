@@ -27,7 +27,9 @@ const (
 	defaultConfiguration           string = ""
 	defaultDatabaseUrl             string = ""
 	defaultEnableAll               bool   = false
+	defaultEnableSenzingRestApi    bool   = false
 	defaultEnableSwaggerUI         bool   = false
+	defaultEnableXterm             bool   = false
 	defaultEngineConfigurationJson string = ""
 	defaultEngineLogLevel          int    = 0
 	defaultGrpcUrl                        = ""
@@ -56,7 +58,9 @@ var openApiSpecification []byte
 // Since init() is always invoked, define command line parameters.
 func init() {
 	RootCmd.Flags().Bool("enable-all", defaultEnableSwaggerUI, fmt.Sprintf("Enable all services [%s]", "SENZING_TOOLS_ENABLE_ALL"))
+	RootCmd.Flags().Bool("enable-senzing-rest-api", defaultEnableSwaggerUI, fmt.Sprintf("Enable the Senzing REST API service [%s]", "SENZING_TOOLS_ENABLE_SENZING_REST_API"))
 	RootCmd.Flags().Bool("enable-swagger-ui", defaultEnableSwaggerUI, fmt.Sprintf("Enable the Swagger UI service [%s]", "SENZING_TOOLS_ENABLE_SWAGGER_UI"))
+	RootCmd.Flags().Bool("enable-xterm", defaultEnableXterm, fmt.Sprintf("Enable the XTerm service [%s]", "SENZING_TOOLS_ENABLE_XTERM"))
 	RootCmd.Flags().Int("http-port", defaultHttpPort, fmt.Sprintf("Port to serve HTTP [%s]", "SENZING_TOOLS_HTTP_PORT"))
 	RootCmd.Flags().Int(option.EngineLogLevel, defaultEngineLogLevel, fmt.Sprintf("Log level for Senzing Engine [%s]", envar.EngineLogLevel))
 	RootCmd.Flags().String("grpc-url", defaultGrpcUrl, fmt.Sprintf("URL of Senzing gRPC service [%s]", "SENZING_TOOLS_GRPC_URL"))
@@ -115,8 +119,10 @@ func loadOptions(cobraCommand *cobra.Command) {
 	// Bools
 
 	boolOptions := map[string]bool{
-		"enable-all":        defaultEnableAll,
-		"enable-swagger-ui": defaultEnableSwaggerUI,
+		"enable-all":              defaultEnableAll,
+		"enable-senzing-rest-api": defaultEnableSenzingRestApi,
+		"enable-swagger-ui":       defaultEnableSwaggerUI,
+		"enable-xterm":            defaultEnableXterm,
 	}
 	for optionKey, optionValue := range boolOptions {
 		viper.SetDefault(optionKey, optionValue)
@@ -217,7 +223,9 @@ func RunE(_ *cobra.Command, _ []string) error {
 
 	httpServer := &httpserver.HttpServerImpl{
 		EnableAll:                      viper.GetBool("enable-all"),
+		EnableSenzingRestAPI:           viper.GetBool("enable-senzing-rest-api"),
 		EnableSwaggerUI:                viper.GetBool("enable-swagger-ui"),
+		EnableXterm:                    viper.GetBool("enable-xterm"),
 		GrpcDialOptions:                grpcDialOptions,
 		GrpcTarget:                     grpcTarget,
 		LogLevelName:                   viper.GetString(option.LogLevel),
