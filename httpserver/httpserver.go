@@ -100,12 +100,11 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 
 	}
 
+	// Start service.
+
 	if len(userMessage) == 0 {
 		userMessage = fmt.Sprintf("Serving on port: %d\n", httpServer.Port)
 	}
-
-	// Start service.
-
 	fmt.Println(userMessage)
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", httpServer.Port), rootMux); err != nil {
 		log.Fatal(err)

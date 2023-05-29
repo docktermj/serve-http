@@ -11,7 +11,7 @@ require (
 	github.com/senzing/go-logging v1.2.5
 	github.com/senzing/go-observing v0.2.5
 	github.com/senzing/go-sdk-abstract-factory v0.3.0
-	github.com/senzing/senzing-tools v0.2.6
+	github.com/senzing/senzing-tools v0.2.8
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.15.0
 	google.golang.org/grpc v1.55.0
@@ -36,7 +36,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
-	github.com/ogen-go/ogen v0.68.1 // indirect
+	github.com/ogen-go/ogen v0.68.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect

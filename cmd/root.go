@@ -59,11 +59,11 @@ var openApiSpecification []byte
 func init() {
 	RootCmd.Flags().Bool("enable-all", defaultEnableSwaggerUI, fmt.Sprintf("Enable all services [%s]", "SENZING_TOOLS_ENABLE_ALL"))
 	RootCmd.Flags().Bool("enable-senzing-rest-api", defaultEnableSwaggerUI, fmt.Sprintf("Enable the Senzing REST API service [%s]", "SENZING_TOOLS_ENABLE_SENZING_REST_API"))
-	RootCmd.Flags().Bool("enable-swagger-ui", defaultEnableSwaggerUI, fmt.Sprintf("Enable the Swagger UI service [%s]", "SENZING_TOOLS_ENABLE_SWAGGER_UI"))
+	RootCmd.Flags().Bool(option.EnableSwaggerUi, defaultEnableSwaggerUI, fmt.Sprintf("Enable the Swagger UI service [%s]", envar.EnableSwaggerUi))
 	RootCmd.Flags().Bool("enable-xterm", defaultEnableXterm, fmt.Sprintf("Enable the XTerm service [%s]", "SENZING_TOOLS_ENABLE_XTERM"))
-	RootCmd.Flags().Int("http-port", defaultHttpPort, fmt.Sprintf("Port to serve HTTP [%s]", "SENZING_TOOLS_HTTP_PORT"))
+	RootCmd.Flags().Int(option.HttpPort, defaultHttpPort, fmt.Sprintf("Port to serve HTTP [%s]", envar.HttpPort))
 	RootCmd.Flags().Int(option.EngineLogLevel, defaultEngineLogLevel, fmt.Sprintf("Log level for Senzing Engine [%s]", envar.EngineLogLevel))
-	RootCmd.Flags().String("grpc-url", defaultGrpcUrl, fmt.Sprintf("URL of Senzing gRPC service [%s]", "SENZING_TOOLS_GRPC_URL"))
+	RootCmd.Flags().String(option.GrpcUrl, defaultGrpcUrl, fmt.Sprintf("URL of Senzing gRPC service [%s]", envar.GrpcUrl))
 	RootCmd.Flags().String(option.Configuration, defaultConfiguration, fmt.Sprintf("Path to configuration file [%s]", envar.Configuration))
 	RootCmd.Flags().String(option.DatabaseUrl, defaultDatabaseUrl, fmt.Sprintf("URL of database to initialize [%s]", envar.DatabaseUrl))
 	RootCmd.Flags().String(option.EngineConfigurationJson, defaultEngineConfigurationJson, fmt.Sprintf("JSON string sent to Senzing's init() function [%s]", envar.EngineConfigurationJson))
@@ -121,7 +121,7 @@ func loadOptions(cobraCommand *cobra.Command) {
 	boolOptions := map[string]bool{
 		"enable-all":              defaultEnableAll,
 		"enable-senzing-rest-api": defaultEnableSenzingRestApi,
-		"enable-swagger-ui":       defaultEnableSwaggerUI,
+		option.EnableSwaggerUi:    defaultEnableSwaggerUI,
 		"enable-xterm":            defaultEnableXterm,
 	}
 	for optionKey, optionValue := range boolOptions {
@@ -136,7 +136,7 @@ func loadOptions(cobraCommand *cobra.Command) {
 
 	intOptions := map[string]int{
 		option.EngineLogLevel: defaultEngineLogLevel,
-		"http-port":           defaultHttpPort,
+		option.HttpPort:       defaultHttpPort,
 	}
 	for optionKey, optionValue := range intOptions {
 		viper.SetDefault(optionKey, optionValue)
@@ -156,7 +156,7 @@ func loadOptions(cobraCommand *cobra.Command) {
 		option.LogLevel:                defaultLogLevel,
 		option.ObserverOrigin:          defaultObserverOrigin,
 		option.ObserverUrl:             defaultObserverUrl,
-		"grpc-url":                     defaultGrpcUrl,
+		option.GrpcUrl:                 defaultGrpcUrl,
 	}
 	for optionKey, optionValue := range stringOptions {
 		viper.SetDefault(optionKey, optionValue)
@@ -204,7 +204,7 @@ func RunE(_ *cobra.Command, _ []string) error {
 
 	// Determine if gRPC is being used.
 
-	grpcUrl := viper.GetString("grpc-url")
+	grpcUrl := viper.GetString(option.GrpcUrl)
 	grpcTarget := ""
 	grpcDialOptions := []grpc.DialOption{}
 	if len(grpcUrl) > 0 {
@@ -224,7 +224,7 @@ func RunE(_ *cobra.Command, _ []string) error {
 	httpServer := &httpserver.HttpServerImpl{
 		EnableAll:                      viper.GetBool("enable-all"),
 		EnableSenzingRestAPI:           viper.GetBool("enable-senzing-rest-api"),
-		EnableSwaggerUI:                viper.GetBool("enable-swagger-ui"),
+		EnableSwaggerUI:                viper.GetBool(option.EnableSwaggerUi),
 		EnableXterm:                    viper.GetBool("enable-xterm"),
 		GrpcDialOptions:                grpcDialOptions,
 		GrpcTarget:                     grpcTarget,
@@ -232,7 +232,7 @@ func RunE(_ *cobra.Command, _ []string) error {
 		ObserverOrigin:                 viper.GetString(option.ObserverOrigin),
 		Observers:                      observers,
 		OpenApiSpecification:           openApiSpecification,
-		Port:                           viper.GetInt("http-port"),
+		Port:                           viper.GetInt(option.HttpPort),
 		SenzingEngineConfigurationJson: senzingEngineConfigurationJson,
 		SenzingModuleName:              viper.GetString(option.EngineModuleName),
 		SenzingVerboseLogging:          viper.GetInt(option.EngineLogLevel),
