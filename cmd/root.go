@@ -26,6 +26,7 @@ import (
 const (
 	defaultConfiguration           string = ""
 	defaultDatabaseUrl             string = ""
+	defaultEnableAll               bool   = false
 	defaultEnableSwaggerUI         bool   = false
 	defaultEngineConfigurationJson string = ""
 	defaultEngineLogLevel          int    = 0
@@ -54,6 +55,7 @@ var openApiSpecification []byte
 
 // Since init() is always invoked, define command line parameters.
 func init() {
+	RootCmd.Flags().Bool("enable-all", defaultEnableSwaggerUI, fmt.Sprintf("Enable all services [%s]", "SENZING_TOOLS_ENABLE_ALL"))
 	RootCmd.Flags().Bool("enable-swagger-ui", defaultEnableSwaggerUI, fmt.Sprintf("Enable the Swagger UI service [%s]", "SENZING_TOOLS_ENABLE_SWAGGER_UI"))
 	RootCmd.Flags().Int("http-port", defaultHttpPort, fmt.Sprintf("Port to serve HTTP [%s]", "SENZING_TOOLS_HTTP_PORT"))
 	RootCmd.Flags().Int(option.EngineLogLevel, defaultEngineLogLevel, fmt.Sprintf("Log level for Senzing Engine [%s]", envar.EngineLogLevel))
@@ -113,6 +115,7 @@ func loadOptions(cobraCommand *cobra.Command) {
 	// Bools
 
 	boolOptions := map[string]bool{
+		"enable-all":        defaultEnableAll,
 		"enable-swagger-ui": defaultEnableSwaggerUI,
 	}
 	for optionKey, optionValue := range boolOptions {
@@ -213,6 +216,7 @@ func RunE(_ *cobra.Command, _ []string) error {
 	// Create object and Serve.
 
 	httpServer := &httpserver.HttpServerImpl{
+		EnableAll:                      viper.GetBool("enable-all"),
 		EnableSwaggerUI:                viper.GetBool("enable-swagger-ui"),
 		GrpcDialOptions:                grpcDialOptions,
 		GrpcTarget:                     grpcTarget,

@@ -19,7 +19,10 @@ import (
 
 // HttpServerImpl is the default implementation of the HttpServer interface.
 type HttpServerImpl struct {
+	EnableAll                      bool
+	EnableSenzingRestAPI           bool
 	EnableSwaggerUI                bool
+	EnableXterm                    bool
 	GrpcDialOptions                []grpc.DialOption
 	GrpcTarget                     string
 	LogLevelName                   string
@@ -50,6 +53,7 @@ Output
 */
 
 func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
+	var err error = nil
 	rootMux := http.NewServeMux()
 
 	// Create Senzing HTTP REST API service instance.
@@ -65,27 +69,33 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 		SenzingVerboseLogging:          httpServer.SenzingVerboseLogging,
 	}
 
-	// Create generated server.
-
-	srv, err := senzinghttpapi.NewServer(service, httpServer.ServerOptions...)
-	if err != nil {
-		log.Fatal(err)
-	}
+	userMessage := ""
 
 	// Enable Senzing HTTP REST API.
 
-	rootMux.HandleFunc("/", srv.ServeHTTP)
-	userMessage := fmt.Sprintf("Serving Senzing REST API on port: %d\n", httpServer.Port)
+	if httpServer.EnableAll || httpServer.EnableSenzingRestAPI {
+		srv, err := senzinghttpapi.NewServer(service, httpServer.ServerOptions...)
+		if err != nil {
+			log.Fatal(err)
+		}
+		rootMux.HandleFunc("/", srv.ServeHTTP)
+		userMessage = fmt.Sprintf("Serving Senzing REST API on port: %d\n", httpServer.Port)
+	}
 
-	// Optionally enable SwaggerUI.
+	// Enable SwaggerUI.
 
-	if httpServer.EnableSwaggerUI {
+	if httpServer.EnableAll || httpServer.EnableSwaggerUI {
 		swaggerMux := swaggerui.Handler(httpServer.OpenApiSpecification)
 		swaggerFunc := swaggerMux.ServeHTTP
 		submux := http.NewServeMux()
 		submux.HandleFunc("/", swaggerFunc)
 		rootMux.Handle(fmt.Sprintf("/%s/", httpServer.SwaggerUrlRoutePrefix), http.StripPrefix(fmt.Sprintf("/%s", httpServer.SwaggerUrlRoutePrefix), submux))
 		userMessage = fmt.Sprintf("%sView SwaggerUI at http://localhost:%d/%s\n", userMessage, httpServer.Port, httpServer.SwaggerUrlRoutePrefix)
+	}
+
+	// Enable Xterm.
+
+	if httpServer.EnableAll || httpServer.EnableXterm {
 	}
 
 	// Start service.
