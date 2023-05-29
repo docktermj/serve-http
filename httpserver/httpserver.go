@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"reflect"
 
+	"github.com/docktermj/cloudshell/xtermservice"
 	"github.com/docktermj/go-http/senzinghttpapi"
 	"github.com/docktermj/serve-http/httpservice"
 	"github.com/flowchartsman/swaggerui"
@@ -35,7 +37,20 @@ type HttpServerImpl struct {
 	SenzingVerboseLogging          int
 	ServerOptions                  []senzinghttpapi.ServerOption
 	SwaggerUrlRoutePrefix          string
+	XtermAllowedHostnames          []string
+	XtermArguments                 []string
+	XtermCommand                   string
+	XtermConnectionErrorLimit      int
+	XtermKeepalivePingTimeout      int
+	XtermMaxBufferSizeBytes        int
+	XtermPathLiveness              string
+	XtermPathMetrics               string
+	XtermPathReadiness             string
+	XtermPathXtermjs               string
+	XtermPort                      int
+	XtermServerAddr                string
 	XtermUrlRoutePrefix            string
+	XtermWorkingDir                string
 }
 
 // ----------------------------------------------------------------------------
@@ -58,26 +73,26 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 	var userMessage string = ""
 	rootMux := http.NewServeMux()
 
-	// Create Senzing HTTP REST API service instance.
-
-	service := &httpservice.HttpServiceImpl{
-		GrpcDialOptions:                httpServer.GrpcDialOptions,
-		GrpcTarget:                     httpServer.GrpcTarget,
-		LogLevelName:                   httpServer.LogLevelName,
-		ObserverOrigin:                 httpServer.ObserverOrigin,
-		Observers:                      httpServer.Observers,
-		SenzingEngineConfigurationJson: httpServer.SenzingEngineConfigurationJson,
-		SenzingModuleName:              httpServer.SenzingModuleName,
-		SenzingVerboseLogging:          httpServer.SenzingVerboseLogging,
-	}
-
 	// Enable Senzing HTTP REST API.
 
 	if httpServer.EnableAll || httpServer.EnableSenzingRestAPI {
+		service := &httpservice.HttpServiceImpl{
+			GrpcDialOptions:                httpServer.GrpcDialOptions,
+			GrpcTarget:                     httpServer.GrpcTarget,
+			LogLevelName:                   httpServer.LogLevelName,
+			ObserverOrigin:                 httpServer.ObserverOrigin,
+			Observers:                      httpServer.Observers,
+			SenzingEngineConfigurationJson: httpServer.SenzingEngineConfigurationJson,
+			SenzingModuleName:              httpServer.SenzingModuleName,
+			SenzingVerboseLogging:          httpServer.SenzingVerboseLogging,
+		}
 		srv, err := senzinghttpapi.NewServer(service, httpServer.ServerOptions...)
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		fmt.Printf(">>>>>> srv: %s\n", reflect.TypeOf(srv))
+
 		rootMux.HandleFunc("/", srv.ServeHTTP)
 		userMessage = fmt.Sprintf("%sServing Senzing REST API at http://localhost:%d/\n", userMessage, httpServer.Port)
 	}
@@ -96,8 +111,30 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 	// Enable Xterm.
 
 	if httpServer.EnableAll || httpServer.EnableXterm {
-		userMessage = fmt.Sprintf("%sServing XTerm at http://localhost:%d/%s\n", userMessage, httpServer.Port, httpServer.XtermUrlRoutePrefix)
+		service := &xtermservice.XtermServiceImpl{
+			AllowedHostnames:     httpServer.XtermAllowedHostnames,
+			Arguments:            httpServer.XtermArguments,
+			Command:              httpServer.XtermCommand,
+			ConnectionErrorLimit: httpServer.XtermConnectionErrorLimit,
+			KeepalivePingTimeout: httpServer.XtermKeepalivePingTimeout,
+			MaxBufferSizeBytes:   httpServer.XtermMaxBufferSizeBytes,
+			PathLiveness:         httpServer.XtermPathLiveness,
+			PathMetrics:          httpServer.XtermPathMetrics,
+			PathReadiness:        httpServer.XtermPathReadiness,
+			PathXtermjs:          httpServer.XtermPathXtermjs,
+			Port:                 httpServer.XtermPort,
+			ServerAddr:           httpServer.XtermServerAddr,
+			WorkingDir:           httpServer.XtermWorkingDir,
+		}
+		xtermMux := service.Handler(ctx) // Returns *http.ServeMux
+		xtermFunc := xtermMux.ServeHTTP
+		submux := http.NewServeMux()
+		submux.HandleFunc("/", xtermFunc)
+		// rootMux.Handle(fmt.Sprintf("/%s/", httpServer.XtermUrlRoutePrefix), http.StripPrefix(fmt.Sprintf("/%s", httpServer.XtermUrlRoutePrefix), submux))
+		// rootMux.Handle(fmt.Sprintf("/%s/", httpServer.XtermUrlRoutePrefix), submux)
+		rootMux.Handle("/", submux)
 
+		userMessage = fmt.Sprintf("%sServing XTerm at http://localhost:%d/%s\n", userMessage, httpServer.Port, httpServer.XtermUrlRoutePrefix)
 	}
 
 	// Start service.
