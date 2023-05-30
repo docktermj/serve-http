@@ -20,7 +20,7 @@ import (
 
 // HttpServerImpl is the default implementation of the HttpServer interface.
 type HttpServerImpl struct {
-	ApiUrlRoutePrefix              string
+	ApiUrlRoutePrefix              string // FIXME: Only works with "api"
 	EnableAll                      bool
 	EnableSenzingRestAPI           bool
 	EnableSwaggerUI                bool
@@ -37,7 +37,7 @@ type HttpServerImpl struct {
 	ServerAddress                  string
 	ServerOptions                  []senzinghttpapi.ServerOption
 	ServerPort                     int
-	SwaggerUrlRoutePrefix          string
+	SwaggerUrlRoutePrefix          string // FIXME: Only works with "swagger"
 	XtermAllowedHostnames          []string
 	XtermArguments                 []string
 	XtermCommand                   string
@@ -48,7 +48,7 @@ type HttpServerImpl struct {
 	XtermPathMetrics               string
 	XtermPathReadiness             string
 	XtermPathXtermjs               string
-	XtermUrlRoutePrefix            string
+	XtermUrlRoutePrefix            string // FIXME: Only works with "xterm"
 }
 
 // ----------------------------------------------------------------------------
@@ -67,8 +67,9 @@ Output
 */
 
 func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
-	var userMessage string = ""
 	rootMux := http.NewServeMux()
+	listenOnAddress := fmt.Sprintf("%s:%v", httpServer.ServerAddress, httpServer.ServerPort)
+	var userMessage = fmt.Sprintf("Starting server on interface:port '%s'\n", listenOnAddress)
 
 	// Enable Senzing HTTP REST API.
 
@@ -112,10 +113,6 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 			ConnectionErrorLimit: httpServer.XtermConnectionErrorLimit,
 			KeepalivePingTimeout: httpServer.XtermKeepalivePingTimeout,
 			MaxBufferSizeBytes:   httpServer.XtermMaxBufferSizeBytes,
-			PathLiveness:         httpServer.XtermPathLiveness,
-			PathMetrics:          httpServer.XtermPathMetrics,
-			PathReadiness:        httpServer.XtermPathReadiness,
-			PathXtermjs:          httpServer.XtermPathXtermjs,
 			UrlRoutePrefix:       httpServer.XtermUrlRoutePrefix,
 		}
 		xtermMux := xtermService.Handler(ctx) // Returns *http.ServeMux
@@ -125,22 +122,10 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 
 	// Start service.
 
-	if len(userMessage) == 0 {
-		userMessage = fmt.Sprintf("Serving on port: %d\n", httpServer.ServerPort)
-	}
 	fmt.Println(userMessage)
-	// if err := http.ListenAndServe(fmt.Sprintf(":%d", httpServer.Port), rootMux); err != nil {
-	// 	log.Fatal(err)
-	// }
-	// return err
-
-	// Start service.
-
-	listenOnAddress := fmt.Sprintf("%s:%v", httpServer.ServerAddress, httpServer.ServerPort)
 	server := http.Server{
 		Addr:    listenOnAddress,
 		Handler: rootMux,
 	}
-	fmt.Printf("starting server on interface:port '%s'...", listenOnAddress)
 	return server.ListenAndServe()
 }
