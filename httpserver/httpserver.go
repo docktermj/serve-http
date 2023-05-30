@@ -2,7 +2,10 @@ package httpserver
 
 import (
 	"context"
+	"embed"
 	"fmt"
+	"html/template"
+	"io/fs"
 	"log"
 	"net/http"
 
@@ -44,11 +47,69 @@ type HttpServerImpl struct {
 	XtermConnectionErrorLimit      int
 	XtermKeepalivePingTimeout      int
 	XtermMaxBufferSizeBytes        int
-	XtermPathLiveness              string
-	XtermPathMetrics               string
-	XtermPathReadiness             string
-	XtermPathXtermjs               string
 	XtermUrlRoutePrefix            string // FIXME: Only works with "xterm"
+}
+
+type TemplateVariables struct {
+	HttpServerImpl
+	HtmlTitle       string
+	ApiServerUrl    string
+	ApiServerStatus string
+	SwaggerUrl      string
+	SwaggerStatus   string
+	XtermUrl        string
+	XtermStatus     string
+}
+
+// ----------------------------------------------------------------------------
+// Variables
+// ----------------------------------------------------------------------------
+
+//go:embed static/*
+var static embed.FS
+
+// ----------------------------------------------------------------------------
+// Internal methods
+// ----------------------------------------------------------------------------
+
+func (httpServer *HttpServerImpl) populateStaticTemplate(responseWriter http.ResponseWriter, request *http.Request, filepath string, templateVariables TemplateVariables) {
+	templateBytes, err := static.ReadFile(filepath)
+	if err != nil {
+		http.Error(responseWriter, http.StatusText(500), 500)
+		return
+	}
+	templateParsed, err := template.New("HtmlTemplate").Parse(string(templateBytes))
+	if err != nil {
+		http.Error(responseWriter, http.StatusText(500), 500)
+		return
+	}
+	err = templateParsed.Execute(responseWriter, templateVariables)
+	if err != nil {
+		http.Error(responseWriter, http.StatusText(500), 500)
+		return
+	}
+}
+
+func (httpServer *HttpServerImpl) getServerStatus(up bool) string {
+	result := "red"
+	if httpServer.EnableAll {
+		result = "green"
+	}
+	if up {
+		result = "green"
+	}
+	return result
+}
+
+func (httpServer *HttpServerImpl) getServerUrl(up bool, url string) string {
+	result := ""
+	if httpServer.EnableAll {
+		result = url
+	}
+	if up {
+		result = url
+	}
+	return result
 }
 
 // ----------------------------------------------------------------------------
@@ -69,7 +130,7 @@ Output
 func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 	rootMux := http.NewServeMux()
 	listenOnAddress := fmt.Sprintf("%s:%v", httpServer.ServerAddress, httpServer.ServerPort)
-	var userMessage = fmt.Sprintf("Starting server on interface:port '%s'\n", listenOnAddress)
+	var userMessage = fmt.Sprintf("Starting server on interface:port '%s'\nServing on http://localhost:%d\n\n", listenOnAddress, httpServer.ServerPort)
 
 	// Enable Senzing HTTP REST API.
 
@@ -119,6 +180,36 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 		rootMux.Handle(fmt.Sprintf("/%s/", httpServer.XtermUrlRoutePrefix), http.StripPrefix("/xterm", xtermMux))
 		userMessage = fmt.Sprintf("%sServing XTerm at http://localhost:%d/%s\n", userMessage, httpServer.ServerPort, httpServer.XtermUrlRoutePrefix)
 	}
+
+	// Create replacement variables for template pages.
+
+	host := fmt.Sprintf("localhost:%d", httpServer.ServerPort)
+
+	templateVariables := TemplateVariables{
+		HttpServerImpl:  *httpServer,
+		HtmlTitle:       "Senzing Tools",
+		ApiServerUrl:    httpServer.getServerUrl(httpServer.EnableSenzingRestAPI, fmt.Sprintf("http://%s/api", host)),
+		ApiServerStatus: httpServer.getServerStatus(httpServer.EnableSenzingRestAPI),
+		SwaggerUrl:      httpServer.getServerUrl(httpServer.EnableSwaggerUI, fmt.Sprintf("http://%s/swagger", host)),
+		SwaggerStatus:   httpServer.getServerStatus(httpServer.EnableSwaggerUI),
+		XtermUrl:        httpServer.getServerUrl(httpServer.EnableXterm, fmt.Sprintf("http://%s/xterm", host)),
+		XtermStatus:     httpServer.getServerStatus(httpServer.EnableXterm),
+	}
+
+	// Add routes for template pages.
+
+	rootMux.HandleFunc("/overview.html", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		httpServer.populateStaticTemplate(w, r, "static/templates/overview.html", templateVariables)
+	})
+
+	// Add route to static files.
+
+	rootDir, err := fs.Sub(static, "static/root")
+	if err != nil {
+		panic(err)
+	}
+	rootMux.Handle("/", http.StripPrefix("/", http.FileServer(http.FS(rootDir))))
 
 	// Start service.
 

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>{{.HtmlTitle}}</title>
+  <style>
+    table {
+      font-family: arial, sans-serif;
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    td,
+    th {
+      border: 1px solid #dddddd;
+      text-align: left;
+      padding: 8px;
+    }
+
+    tr:nth-child(even) {
+      background-color: #dddddd;
+    }
+  </style>
+
+</head>
+
+<body>
+
+  <h3>Services</h3>
+
+  <table>
+    <tr>
+      <th>Status</th>
+      <th>Service</th>
+      <th>Location</th>
+      <th>senzing-tools command line option</th>
+      <th>Environment variable</th>
+    </tr>
+    <tr>
+      <td style="text-align: center; vertical-align: middle;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="{{.ApiServerStatus}}"
+          class="bi bi-circle-fill" viewBox="0 0 16 16">
+          <circle cx="8" cy="8" r="8" />
+        </svg>
+      </td>
+      <td>Senzing API Server</td>
+      <td>{{if .ApiServerUrl}}<a href="{{.ApiServerUrl}}">{{.ApiServerUrl}}</a> {{end}}</td>
+      <td>--enable-senzing-rest-api</td>
+      <td>SENZING_TOOLS_ENABLE_SENZING_REST_API</td>
+    </tr>
+    <tr>
+      <td style="text-align: center; vertical-align: middle;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="{{.SwaggerStatus}}"
+          class="bi bi-circle-fill" viewBox="0 0 16 16">
+          <circle cx="8" cy="8" r="8" />
+        </svg>
+      </td>
+      <td>Swagger UI</td>
+      <td>{{if .SwaggerUrl}}<a href="{{.SwaggerUrl}}">{{.SwaggerUrl}}</a> {{end}}</td>
+      <td>--enable-swagger-ui</td>
+      <td>SENZING_TOOLS_ENABLE_SWAGGER_UI</td>
+    </tr>
+    <tr>
+      <td style="text-align: center; vertical-align: middle;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="{{.XtermStatus}}" class="bi bi-circle-fill"
+          viewBox="0 0 16 16">
+          <circle cx="8" cy="8" r="8" />
+        </svg>
+      </td>
+      <td>XTerm</td>
+      <td>{{if .XtermUrl}}<a href="{{.XtermUrl}}">{{.XtermUrl}}</a> {{end}}</td>
+      <td>--enable-xterm</td>
+      <td>SENZING_TOOLS_ENABLE_XTERM</td>
+    </tr>
+  </table>
+
+  <p>&nbsp;</p>
+  <p>&nbsp;</p>
+  <p>&nbsp;</p>
+
+  <h3>Debug information</h3>
+  <table>
+    <tr>
+      <th>Variable</th>
+      <th>Value</th>
+      <th>Environment variable</th>
+    </tr>
+    <tr>
+      <td>ApiUrlRoutePrefix</td>
+      <td>{{.ApiUrlRoutePrefix}}</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>EnableAll</td>
+      <td>{{.EnableAll}}</td>
+      <td>SENZING_TOOLS_ENABLE_ALL</td>
+    </tr>
+    <tr>
+      <td>EnableSenzingRestAPI</td>
+      <td>{{.EnableSenzingRestAPI}}</td>
+      <td>SENZING_TOOLS_ENABLE_SENZING_REST_API</td>
+    </tr>
+    <tr>
+      <td>EnableSwaggerUI</td>
+      <td>{{.EnableSwaggerUI}}</td>
+      <td>SENZING_TOOLS_ENABLE_SWAGGER_UI</td>
+    </tr>
+    <tr>
+      <td>EnableXterm</td>
+      <td>{{.EnableXterm}}</td>
+      <td>SENZING_TOOLS_ENABLE_XTERM</td>
+    </tr>
+    <tr>
+      <td>GrpcDialOptions</td>
+      <td>{{.GrpcDialOptions}}</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>GrpcTarget</td>
+      <td>{{.GrpcTarget}}</td>
+      <td>SENZING_TOOLS_GRPC_URL</td>
+    </tr>
+    <tr>
+      <td>LogLevelName</td>
+      <td>{{.LogLevelName}}</td>
+      <td>SENZING_TOOLS_LOG_LEVEL</td>
+    </tr>
+    <tr>
+      <td>ObserverOrigin</td>
+      <td>{{.ObserverOrigin}}</td>
+      <td>SENZING_TOOLS_OBSERVER_ORIGIN</td>
+    </tr>
+    <tr>
+      <td>Observers</td>
+      <td>{{.Observers}}</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>SenzingEngineConfigurationJson</td>
+      <td>{{.SenzingEngineConfigurationJson}}</td>
+      <td>SENZING_TOOLS_ENGINE_CONFIGURATION_JSON</td>
+    </tr>
+    <tr>
+      <td>SenzingModuleName</td>
+      <td>{{.SenzingModuleName}}</td>
+      <td>SENZING_TOOLS_ENGINE_MODULE_NAME</td>
+    </tr>
+    <tr>
+      <td>SenzingVerboseLogging</td>
+      <td>{{.SenzingVerboseLogging}}</td>
+      <td>SENZING_TOOLS_ENGINE_LOG_LEVEL</td>
+    </tr>
+    <tr>
+      <td>ServerAddress</td>
+      <td> {{.ServerAddress}}</td>
+      <td>SENZING_TOOLS_SERVER_ADDRESS</td>
+    </tr>
+    <tr>
+      <td>ServerOptions</td>
+      <td>{{.ServerOptions}}</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>ServerPort</td>
+      <td>{{.ServerPort}}</td>
+      <td>SENZING_TOOLS_HTTP_PORT</td>
+    </tr>
+    <tr>
+      <td>SwaggerUrlRoutePrefix</td>
+      <td>{{.SwaggerUrlRoutePrefix}}</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>XtermAllowedHostnames</td>
+      <td>{{.XtermAllowedHostnames}}</td>
+      <td>SENZING_TOOLS_XTERM_ALLOWED_HOSTNAMES</td>
+    </tr>
+    <tr>
+      <td>XtermArguments</td>
+      <td>{{.XtermArguments}}</td>
+      <td>SENZING_TOOLS_XTERM_ARGUMENTS</td>
+    </tr>
+    <tr>
+      <td>XtermCommand</td>
+      <td> {{.XtermCommand}}</td>
+      <td>SENZING_TOOLS_XTERM_COMMAND</td>
+    </tr>
+    <tr>
+      <td>XtermConnectionErrorLimit</td>
+      <td>{{.XtermConnectionErrorLimit}}</td>
+      <td>SENZING_TOOLS_XTERM_CONNECTION_ERROR_LIMIT</td>
+    </tr>
+    <tr>
+      <td>XtermKeepalivePingTimeout</td>
+      <td>{{.XtermKeepalivePingTimeout}}</td>
+      <td>SENZING_TOOLS_XTERM_KEEPALIVE_PING_TIMEOUT</td>
+    </tr>
+    <tr>
+      <td>XtermMaxBufferSizeBytes</td>
+      <td>{{.XtermMaxBufferSizeBytes}}</td>
+      <td>SENZING_TOOLS_XTERM_MAX_BUFFER_SIZE_BYTES</td>
+    </tr>
+    <tr>
+      <td>XtermUrlRoutePrefix</td>
+      <td>{{.XtermUrlRoutePrefix}}</td>
+      <td></td>
+    </tr>
+  </table>
+</body>
+
+</html>

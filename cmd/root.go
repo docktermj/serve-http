@@ -29,20 +29,20 @@ const (
 	defaultKeepalivePingTimeout int    = 20
 	defaultMaxBufferSizeBytes   int    = 512
 	defaultServerAddress        string = "0.0.0.0"
-	envarAllowedHostnames       string = "SENZING_TOOLS_ALLOWED_HOSTNAMES"
-	envarArguments              string = "SENZING_TOOLS_ARGUMENTS"
-	envarCommand                string = "SENZING_TOOLS_COMMAND"
-	envarConnectionErrorLimit   string = "SENZING_TOOLS_CONNECTION_ERROR_LIMIT"
-	envarKeepalivePingTimeout   string = "SENZING_TOOLS_KEEPALIVE_PING_TIMEOUT"
-	envarMaxBufferSizeBytes     string = "SENZING_TOOLS_MAX_BUFFER_SIZE_BYTES"
-	envarServerAddr             string = "SENZING_TOOLS_SERVER_ADDR"
-	optionAllowedHostnames      string = "allowed-hostnames"
-	optionArguments             string = "arguments"
-	optionCommand               string = "command"
-	optionConnectionErrorLimit  string = "connection-error-limit"
-	optionKeepalivePingTimeout  string = "keepalive-ping-timeout"
-	optionMaxBufferSizeBytes    string = "max-buffer-size-bytes"
-	optionServerAddr            string = "server-addr"
+	envarAllowedHostnames       string = "SENZING_TOOLS_XTERM_ALLOWED_HOSTNAMES"
+	envarArguments              string = "SENZING_TOOLS_XTERM_ARGUMENTS"
+	envarCommand                string = "SENZING_TOOLS_XTERM_COMMAND"
+	envarConnectionErrorLimit   string = "SENZING_TOOLS_XTERM_CONNECTION_ERROR_LIMIT"
+	envarKeepalivePingTimeout   string = "SENZING_TOOLS_XTERM_KEEPALIVE_PING_TIMEOUT"
+	envarMaxBufferSizeBytes     string = "SENZING_TOOLS_XTERM_MAX_BUFFER_SIZE_BYTES"
+	envarServerAddress          string = "SENZING_TOOLS_SERVER_ADDRESS"
+	optionAllowedHostnames      string = "xterm-allowed-hostnames"
+	optionArguments             string = "xterm-arguments"
+	optionCommand               string = "xterm-command"
+	optionConnectionErrorLimit  string = "xterm-connection-error-limit"
+	optionKeepalivePingTimeout  string = "xterm-keepalive-ping-timeout"
+	optionMaxBufferSizeBytes    string = "xterm-max-buffer-size-bytes"
+	optionServerAddress         string = "server-address"
 
 	defaultConfiguration           string = ""
 	defaultDatabaseUrl             string = ""
@@ -84,7 +84,7 @@ func init() {
 	RootCmd.Flags().Int(optionKeepalivePingTimeout, defaultKeepalivePingTimeout, fmt.Sprintf("Maximum allowable seconds between a ping message and its response [%s]", envarKeepalivePingTimeout))
 	RootCmd.Flags().Int(optionMaxBufferSizeBytes, defaultMaxBufferSizeBytes, fmt.Sprintf("Maximum length of terminal input [%s]", envarMaxBufferSizeBytes))
 	RootCmd.Flags().String(optionCommand, defaultCommand, fmt.Sprintf("Path of shell command [%s]", envarCommand))
-	RootCmd.Flags().String(optionServerAddr, defaultServerAddress, fmt.Sprintf("IP interface server listens on [%s]", envarServerAddr))
+	RootCmd.Flags().String(optionServerAddress, defaultServerAddress, fmt.Sprintf("IP interface server listens on [%s]", envarServerAddress))
 	RootCmd.Flags().StringSlice(optionAllowedHostnames, defaultAllowedHostnames, fmt.Sprintf("Comma-delimited list of hostnames permitted to connect to the websocket [%s]", envarAllowedHostnames))
 	RootCmd.Flags().StringSlice(optionArguments, defaultArguments, fmt.Sprintf("Comma-delimited list of arguments passed to the terminal command prompt [%s]", envarArguments))
 
@@ -192,7 +192,7 @@ func loadOptions(cobraCommand *cobra.Command) {
 		option.ObserverUrl:             defaultObserverUrl,
 		option.GrpcUrl:                 defaultGrpcUrl,
 		optionCommand:                  defaultCommand,
-		optionServerAddr:               defaultServerAddress,
+		optionServerAddress:            defaultServerAddress,
 	}
 	for optionKey, optionValue := range stringOptions {
 		viper.SetDefault(optionKey, optionValue)
@@ -287,7 +287,7 @@ func RunE(_ *cobra.Command, _ []string) error {
 		SenzingEngineConfigurationJson: senzingEngineConfigurationJson,
 		SenzingModuleName:              viper.GetString(option.EngineModuleName),
 		SenzingVerboseLogging:          viper.GetInt(option.EngineLogLevel),
-		ServerAddress:                  viper.GetString(optionServerAddr),
+		ServerAddress:                  viper.GetString(optionServerAddress),
 		ServerPort:                     viper.GetInt(option.HttpPort),
 		SwaggerUrlRoutePrefix:          "swagger",
 		XtermAllowedHostnames:          viper.GetStringSlice(optionAllowedHostnames),
