@@ -31,7 +31,7 @@ const (
 	defaultPathLiveness         string = "/liveness"
 	defaultPathMetrics          string = "/metrics"
 	defaultPathReadiness        string = "/readiness"
-	defaultPathXtermjs          string = "/xterm/xterm.js"
+	defaultPathXtermjs          string = "/xterm.js"
 	defaultServerAddress        string = "0.0.0.0"
 	defaultWorkingDir           string = "/home/senzing/docktermj.git/cloudshell"
 	envarAllowedHostnames       string = "SENZING_TOOLS_ALLOWED_HOSTNAMES"
@@ -313,7 +313,7 @@ func RunE(_ *cobra.Command, _ []string) error {
 		SenzingVerboseLogging:          viper.GetInt(option.EngineLogLevel),
 		ServerAddress:                  viper.GetString(optionServerAddr),
 		ServerPort:                     viper.GetInt(option.HttpPort),
-		SwaggerUrlRoutePrefix:          "swagger",
+		SwaggerUrlRoutePrefix:          "/swagger",
 		XtermAllowedHostnames:          viper.GetStringSlice(optionAllowedHostnames),
 		XtermArguments:                 viper.GetStringSlice(optionArguments),
 		XtermCommand:                   viper.GetString(optionCommand),
@@ -324,8 +324,7 @@ func RunE(_ *cobra.Command, _ []string) error {
 		XtermPathMetrics:               viper.GetString(optionPathMetrics),
 		XtermPathReadiness:             viper.GetString(optionPathReadiness),
 		XtermPathXtermjs:               viper.GetString(optionPathXtermjs),
-		XtermUrlRoutePrefix:            "xterm",
-		XtermWorkingDir:                viper.GetString(optionWorkingDir),
+		XtermUrlRoutePrefix:            "/xterm",
 	}
 	err = httpServer.Serve(ctx)
 	return err

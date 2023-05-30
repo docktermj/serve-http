@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"reflect"
 
 	"github.com/docktermj/cloudshell/xtermservice"
 	"github.com/docktermj/go-http/senzinghttpapi"
@@ -49,7 +48,6 @@ type HttpServerImpl struct {
 	XtermPathReadiness             string
 	XtermPathXtermjs               string
 	XtermUrlRoutePrefix            string
-	XtermWorkingDir                string
 }
 
 // ----------------------------------------------------------------------------
@@ -88,10 +86,7 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		fmt.Printf(">>>>>> srv: %s\n", reflect.TypeOf(srv))
-
-		rootMux.HandleFunc("/", srv.ServeHTTP)
+		rootMux.Handle("/api/", http.StripPrefix("/api", srv))
 		userMessage = fmt.Sprintf("%sServing Senzing REST API at http://localhost:%d/\n", userMessage, httpServer.ServerPort)
 	}
 
@@ -102,7 +97,7 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 		swaggerFunc := swaggerMux.ServeHTTP
 		submux := http.NewServeMux()
 		submux.HandleFunc("/", swaggerFunc)
-		rootMux.Handle(fmt.Sprintf("/%s/", httpServer.SwaggerUrlRoutePrefix), http.StripPrefix(fmt.Sprintf("/%s", httpServer.SwaggerUrlRoutePrefix), submux))
+		rootMux.Handle("/swagger/", http.StripPrefix("/swagger", submux))
 		userMessage = fmt.Sprintf("%sServing SwaggerUI at http://localhost:%d/%s\n", userMessage, httpServer.ServerPort, httpServer.SwaggerUrlRoutePrefix)
 	}
 
@@ -139,9 +134,7 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 			PathMetrics:          httpServer.XtermPathMetrics,
 			PathReadiness:        httpServer.XtermPathReadiness,
 			PathXtermjs:          httpServer.XtermPathXtermjs,
-			ServerAddress:        httpServer.ServerAddress,
-			ServerPort:           httpServer.ServerPort,
-			WorkingDir:           httpServer.XtermWorkingDir,
+			UrlRoutePrefix:       httpServer.XtermUrlRoutePrefix,
 		}
 
 		xtermMux := xtermService.Handler(ctx) // Returns *http.ServeMux
