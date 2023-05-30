@@ -52,13 +52,13 @@ type HttpServerImpl struct {
 
 type TemplateVariables struct {
 	HttpServerImpl
-	HtmlTitle       string
-	ApiServerUrl    string
 	ApiServerStatus string
-	SwaggerUrl      string
+	ApiServerUrl    string
+	HtmlTitle       string
 	SwaggerStatus   string
-	XtermUrl        string
+	SwaggerUrl      string
 	XtermStatus     string
+	XtermUrl        string
 }
 
 // ----------------------------------------------------------------------------
@@ -181,24 +181,19 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 		userMessage = fmt.Sprintf("%sServing XTerm at http://localhost:%d/%s\n", userMessage, httpServer.ServerPort, httpServer.XtermUrlRoutePrefix)
 	}
 
-	// Create replacement variables for template pages.
-
-	host := fmt.Sprintf("localhost:%d", httpServer.ServerPort)
-
-	templateVariables := TemplateVariables{
-		HttpServerImpl:  *httpServer,
-		HtmlTitle:       "Senzing Tools",
-		ApiServerUrl:    httpServer.getServerUrl(httpServer.EnableSenzingRestAPI, fmt.Sprintf("http://%s/api", host)),
-		ApiServerStatus: httpServer.getServerStatus(httpServer.EnableSenzingRestAPI),
-		SwaggerUrl:      httpServer.getServerUrl(httpServer.EnableSwaggerUI, fmt.Sprintf("http://%s/swagger", host)),
-		SwaggerStatus:   httpServer.getServerStatus(httpServer.EnableSwaggerUI),
-		XtermUrl:        httpServer.getServerUrl(httpServer.EnableXterm, fmt.Sprintf("http://%s/xterm", host)),
-		XtermStatus:     httpServer.getServerStatus(httpServer.EnableXterm),
-	}
-
 	// Add routes for template pages.
 
 	rootMux.HandleFunc("/overview.html", func(w http.ResponseWriter, r *http.Request) {
+		templateVariables := TemplateVariables{
+			HttpServerImpl:  *httpServer,
+			HtmlTitle:       "Senzing Tools",
+			ApiServerUrl:    httpServer.getServerUrl(httpServer.EnableSenzingRestAPI, fmt.Sprintf("http://%s/api", r.Host)),
+			ApiServerStatus: httpServer.getServerStatus(httpServer.EnableSenzingRestAPI),
+			SwaggerUrl:      httpServer.getServerUrl(httpServer.EnableSwaggerUI, fmt.Sprintf("http://%s/swagger", r.Host)),
+			SwaggerStatus:   httpServer.getServerStatus(httpServer.EnableSwaggerUI),
+			XtermUrl:        httpServer.getServerUrl(httpServer.EnableXterm, fmt.Sprintf("http://%s/xterm", r.Host)),
+			XtermStatus:     httpServer.getServerStatus(httpServer.EnableXterm),
+		}
 		w.Header().Set("Content-Type", "text/html")
 		httpServer.populateStaticTemplate(w, r, "static/templates/overview.html", templateVariables)
 	})

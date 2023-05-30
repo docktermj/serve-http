@@ -66,7 +66,7 @@ serve-http long description.
 
 var (
 	defaultEngineModuleName string   = fmt.Sprintf("serve-http-%d", time.Now().Unix())
-	defaultAllowedHostnames []string = []string{"localhost"}
+	defaultAllowedHostnames []string = []string{"localhost", "192.168.1.12"}
 	defaultArguments        []string
 )
 
