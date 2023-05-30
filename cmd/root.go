@@ -298,6 +298,7 @@ func RunE(_ *cobra.Command, _ []string) error {
 	// Create object and Serve.
 
 	httpServer := &httpserver.HttpServerImpl{
+		ApiUrlRoutePrefix:              "api",
 		EnableAll:                      viper.GetBool("enable-all"),
 		EnableSenzingRestAPI:           viper.GetBool("enable-senzing-rest-api"),
 		EnableSwaggerUI:                viper.GetBool(option.EnableSwaggerUi),
@@ -313,7 +314,7 @@ func RunE(_ *cobra.Command, _ []string) error {
 		SenzingVerboseLogging:          viper.GetInt(option.EngineLogLevel),
 		ServerAddress:                  viper.GetString(optionServerAddr),
 		ServerPort:                     viper.GetInt(option.HttpPort),
-		SwaggerUrlRoutePrefix:          "/swagger",
+		SwaggerUrlRoutePrefix:          "swagger",
 		XtermAllowedHostnames:          viper.GetStringSlice(optionAllowedHostnames),
 		XtermArguments:                 viper.GetStringSlice(optionArguments),
 		XtermCommand:                   viper.GetString(optionCommand),
@@ -324,7 +325,7 @@ func RunE(_ *cobra.Command, _ []string) error {
 		XtermPathMetrics:               viper.GetString(optionPathMetrics),
 		XtermPathReadiness:             viper.GetString(optionPathReadiness),
 		XtermPathXtermjs:               viper.GetString(optionPathXtermjs),
-		XtermUrlRoutePrefix:            "/xterm",
+		XtermUrlRoutePrefix:            "xterm",
 	}
 	err = httpServer.Serve(ctx)
 	return err
