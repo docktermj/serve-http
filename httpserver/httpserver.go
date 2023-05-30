@@ -31,11 +31,12 @@ type HttpServerImpl struct {
 	ObserverOrigin                 string
 	Observers                      []observer.Observer
 	OpenApiSpecification           []byte
-	Port                           int
 	SenzingEngineConfigurationJson string
 	SenzingModuleName              string
 	SenzingVerboseLogging          int
+	ServerAddress                  string
 	ServerOptions                  []senzinghttpapi.ServerOption
+	ServerPort                     int
 	SwaggerUrlRoutePrefix          string
 	XtermAllowedHostnames          []string
 	XtermArguments                 []string
@@ -47,8 +48,6 @@ type HttpServerImpl struct {
 	XtermPathMetrics               string
 	XtermPathReadiness             string
 	XtermPathXtermjs               string
-	XtermPort                      int
-	XtermServerAddr                string
 	XtermUrlRoutePrefix            string
 	XtermWorkingDir                string
 }
@@ -69,7 +68,6 @@ Output
 */
 
 func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
-	var err error = nil
 	var userMessage string = ""
 	rootMux := http.NewServeMux()
 
@@ -94,7 +92,7 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 		fmt.Printf(">>>>>> srv: %s\n", reflect.TypeOf(srv))
 
 		rootMux.HandleFunc("/", srv.ServeHTTP)
-		userMessage = fmt.Sprintf("%sServing Senzing REST API at http://localhost:%d/\n", userMessage, httpServer.Port)
+		userMessage = fmt.Sprintf("%sServing Senzing REST API at http://localhost:%d/\n", userMessage, httpServer.ServerPort)
 	}
 
 	// Enable SwaggerUI.
@@ -105,13 +103,32 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 		submux := http.NewServeMux()
 		submux.HandleFunc("/", swaggerFunc)
 		rootMux.Handle(fmt.Sprintf("/%s/", httpServer.SwaggerUrlRoutePrefix), http.StripPrefix(fmt.Sprintf("/%s", httpServer.SwaggerUrlRoutePrefix), submux))
-		userMessage = fmt.Sprintf("%sServing SwaggerUI at http://localhost:%d/%s\n", userMessage, httpServer.Port, httpServer.SwaggerUrlRoutePrefix)
+		userMessage = fmt.Sprintf("%sServing SwaggerUI at http://localhost:%d/%s\n", userMessage, httpServer.ServerPort, httpServer.SwaggerUrlRoutePrefix)
 	}
 
 	// Enable Xterm.
 
 	if httpServer.EnableAll || httpServer.EnableXterm {
-		service := &xtermservice.XtermServiceImpl{
+
+		// xtermService := &xtermservice.XtermServiceImpl{
+		// 	AllowedHostnames:     httpServer.AllowedHostnames,
+		// 	Arguments:            httpServer.Arguments,
+		// 	Command:              httpServer.Command,
+		// 	ConnectionErrorLimit: httpServer.ConnectionErrorLimit,
+		// 	KeepalivePingTimeout: httpServer.KeepalivePingTimeout,
+		// 	MaxBufferSizeBytes:   httpServer.MaxBufferSizeBytes,
+		// 	PathLiveness:         httpServer.PathLiveness,
+		// 	PathMetrics:          httpServer.PathMetrics,
+		// 	PathReadiness:        httpServer.PathReadiness,
+		// 	PathXtermjs:          httpServer.PathXtermjs,
+		// 	ServerAddress:        httpServer.ServerAddr,
+		// 	ServerPort:           httpServer.Port,
+		// 	WorkingDir:           httpServer.WorkingDir,
+		// }
+		// xtermMux := xtermService.Handler(ctx)
+		// rootMux.Handle("/", xtermMux)
+
+		xtermService := &xtermservice.XtermServiceImpl{
 			AllowedHostnames:     httpServer.XtermAllowedHostnames,
 			Arguments:            httpServer.XtermArguments,
 			Command:              httpServer.XtermCommand,
@@ -122,29 +139,42 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 			PathMetrics:          httpServer.XtermPathMetrics,
 			PathReadiness:        httpServer.XtermPathReadiness,
 			PathXtermjs:          httpServer.XtermPathXtermjs,
-			Port:                 httpServer.XtermPort,
-			ServerAddr:           httpServer.XtermServerAddr,
+			ServerAddress:        httpServer.ServerAddress,
+			ServerPort:           httpServer.ServerPort,
 			WorkingDir:           httpServer.XtermWorkingDir,
 		}
-		xtermMux := service.Handler(ctx) // Returns *http.ServeMux
-		xtermFunc := xtermMux.ServeHTTP
-		submux := http.NewServeMux()
-		submux.HandleFunc("/", xtermFunc)
+
+		xtermMux := xtermService.Handler(ctx) // Returns *http.ServeMux
+		// xtermFunc := xtermMux.ServeHTTP
+		// submux := http.NewServeMux()
+		// submux.HandleFunc("/", xtermFunc)
 		// rootMux.Handle(fmt.Sprintf("/%s/", httpServer.XtermUrlRoutePrefix), http.StripPrefix(fmt.Sprintf("/%s", httpServer.XtermUrlRoutePrefix), submux))
 		// rootMux.Handle(fmt.Sprintf("/%s/", httpServer.XtermUrlRoutePrefix), submux)
-		rootMux.Handle("/", submux)
+		// rootMux.Handle("/", xtermMux)
+		// rootMux.Handle("/xterm/", xtermMux)
+		rootMux.Handle("/xterm/", http.StripPrefix("/xterm", xtermMux))
 
-		userMessage = fmt.Sprintf("%sServing XTerm at http://localhost:%d/%s\n", userMessage, httpServer.Port, httpServer.XtermUrlRoutePrefix)
+		userMessage = fmt.Sprintf("%sServing XTerm at http://localhost:%d/%s\n", userMessage, httpServer.ServerPort, httpServer.XtermUrlRoutePrefix)
 	}
 
 	// Start service.
 
 	if len(userMessage) == 0 {
-		userMessage = fmt.Sprintf("Serving on port: %d\n", httpServer.Port)
+		userMessage = fmt.Sprintf("Serving on port: %d\n", httpServer.ServerPort)
 	}
 	fmt.Println(userMessage)
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", httpServer.Port), rootMux); err != nil {
-		log.Fatal(err)
+	// if err := http.ListenAndServe(fmt.Sprintf(":%d", httpServer.Port), rootMux); err != nil {
+	// 	log.Fatal(err)
+	// }
+	// return err
+
+	// Start service.
+
+	listenOnAddress := fmt.Sprintf("%s:%v", httpServer.ServerAddress, httpServer.ServerPort)
+	server := http.Server{
+		Addr:    listenOnAddress,
+		Handler: rootMux,
 	}
-	return err
+	fmt.Printf("starting server on interface:port '%s'...", listenOnAddress)
+	return server.ListenAndServe()
 }

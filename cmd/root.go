@@ -28,13 +28,12 @@ const (
 	defaultConnectionErrorLimit int    = 10
 	defaultKeepalivePingTimeout int    = 20
 	defaultMaxBufferSizeBytes   int    = 512
-	defaultPathLiveness         string = "xterm/liveness"
-	defaultPathMetrics          string = "xterm/metrics"
-	defaultPathReadiness        string = "xterm/readiness"
-	defaultPathXtermjs          string = "xterm/xterm.js"
-	defaultPort                 int    = 8080
-	defaultServerAddr           string = "0.0.0.0"
-	defaultWorkingDir           string = "."
+	defaultPathLiveness         string = "/liveness"
+	defaultPathMetrics          string = "/metrics"
+	defaultPathReadiness        string = "/readiness"
+	defaultPathXtermjs          string = "/xterm/xterm.js"
+	defaultServerAddress        string = "0.0.0.0"
+	defaultWorkingDir           string = "/home/senzing/docktermj.git/cloudshell"
 	envarAllowedHostnames       string = "SENZING_TOOLS_ALLOWED_HOSTNAMES"
 	envarArguments              string = "SENZING_TOOLS_ARGUMENTS"
 	envarCommand                string = "SENZING_TOOLS_COMMAND"
@@ -45,7 +44,6 @@ const (
 	envarPathMetrics            string = "SENZING_TOOLS_PATH_METRICS"
 	envarPathReadiness          string = "SENZING_TOOLS_PATH_READINESS"
 	envarPathXtermjs            string = "SENZING_TOOLS_PATH_XTERMJS"
-	envarPort                   string = "SENZING_TOOLS_SERVER_PORT"
 	envarServerAddr             string = "SENZING_TOOLS_SERVER_ADDR"
 	envarWorkingDir             string = "SENZING_TOOLS_WORKDIR"
 	optionAllowedHostnames      string = "allowed-hostnames"
@@ -58,7 +56,6 @@ const (
 	optionPathMetrics           string = "path-metrics"
 	optionPathReadiness         string = "path-readiness"
 	optionPathXtermjs           string = "path-xtermjs"
-	optionPort                  string = "server-port"
 	optionServerAddr            string = "server-addr"
 	optionWorkingDir            string = "workdir"
 
@@ -101,13 +98,12 @@ func init() {
 	RootCmd.Flags().Int(optionConnectionErrorLimit, defaultConnectionErrorLimit, fmt.Sprintf("Connection re-attempts before terminating [%s]", envarConnectionErrorLimit))
 	RootCmd.Flags().Int(optionKeepalivePingTimeout, defaultKeepalivePingTimeout, fmt.Sprintf("Maximum allowable seconds between a ping message and its response [%s]", envarKeepalivePingTimeout))
 	RootCmd.Flags().Int(optionMaxBufferSizeBytes, defaultMaxBufferSizeBytes, fmt.Sprintf("Maximum length of terminal input [%s]", envarMaxBufferSizeBytes))
-	RootCmd.Flags().Int(optionPort, defaultPort, fmt.Sprintf("Port the server listens on [%s]", envarPort))
 	RootCmd.Flags().String(optionCommand, defaultCommand, fmt.Sprintf("Path of shell command [%s]", envarCommand))
 	RootCmd.Flags().String(optionPathLiveness, defaultPathLiveness, fmt.Sprintf("URL for liveness probe [%s]", envarPathLiveness))
 	RootCmd.Flags().String(optionPathMetrics, defaultPathMetrics, fmt.Sprintf("URL for prometheus metrics [%s]", envarPathMetrics))
 	RootCmd.Flags().String(optionPathReadiness, defaultPathReadiness, fmt.Sprintf("URL for readiness probe [%s]", envarPathReadiness))
 	RootCmd.Flags().String(optionPathXtermjs, defaultPathXtermjs, fmt.Sprintf("URL for xterm.js to attach [%s]", envarPathXtermjs))
-	RootCmd.Flags().String(optionServerAddr, defaultServerAddr, fmt.Sprintf("IP interface server listens on [%s]", envarServerAddr))
+	RootCmd.Flags().String(optionServerAddr, defaultServerAddress, fmt.Sprintf("IP interface server listens on [%s]", envarServerAddr))
 	RootCmd.Flags().String(optionWorkingDir, defaultWorkingDir, fmt.Sprintf("Working directory [%s]", envarWorkingDir))
 	RootCmd.Flags().StringSlice(optionAllowedHostnames, defaultAllowedHostnames, fmt.Sprintf("Comma-delimited list of hostnames permitted to connect to the websocket [%s]", envarAllowedHostnames))
 	RootCmd.Flags().StringSlice(optionArguments, defaultArguments, fmt.Sprintf("Comma-delimited list of arguments passed to the terminal command prompt [%s]", envarArguments))
@@ -195,7 +191,6 @@ func loadOptions(cobraCommand *cobra.Command) {
 		optionConnectionErrorLimit: defaultConnectionErrorLimit,
 		optionKeepalivePingTimeout: defaultKeepalivePingTimeout,
 		optionMaxBufferSizeBytes:   defaultMaxBufferSizeBytes,
-		optionPort:                 defaultPort,
 	}
 	for optionKey, optionValue := range intOptions {
 		viper.SetDefault(optionKey, optionValue)
@@ -221,7 +216,7 @@ func loadOptions(cobraCommand *cobra.Command) {
 		optionPathMetrics:              defaultPathMetrics,
 		optionPathReadiness:            defaultPathReadiness,
 		optionPathXtermjs:              defaultPathXtermjs,
-		optionServerAddr:               defaultServerAddr,
+		optionServerAddr:               defaultServerAddress,
 		optionWorkingDir:               defaultWorkingDir,
 	}
 	for optionKey, optionValue := range stringOptions {
@@ -303,21 +298,6 @@ func RunE(_ *cobra.Command, _ []string) error {
 	// Create object and Serve.
 
 	httpServer := &httpserver.HttpServerImpl{
-
-		XtermAllowedHostnames:     viper.GetStringSlice(optionAllowedHostnames),
-		XtermArguments:            viper.GetStringSlice(optionArguments),
-		XtermCommand:              viper.GetString(optionCommand),
-		XtermConnectionErrorLimit: viper.GetInt(optionConnectionErrorLimit),
-		XtermKeepalivePingTimeout: viper.GetInt(optionKeepalivePingTimeout),
-		XtermMaxBufferSizeBytes:   viper.GetInt(optionMaxBufferSizeBytes),
-		XtermPathLiveness:         viper.GetString(optionPathLiveness),
-		XtermPathMetrics:          viper.GetString(optionPathMetrics),
-		XtermPathReadiness:        viper.GetString(optionPathReadiness),
-		XtermPathXtermjs:          viper.GetString(optionPathXtermjs),
-		XtermServerAddr:           viper.GetString(optionServerAddr),
-		XtermPort:                 viper.GetInt(optionPort),
-		XtermWorkingDir:           viper.GetString(optionWorkingDir),
-
 		EnableAll:                      viper.GetBool("enable-all"),
 		EnableSenzingRestAPI:           viper.GetBool("enable-senzing-rest-api"),
 		EnableSwaggerUI:                viper.GetBool(option.EnableSwaggerUi),
@@ -328,12 +308,24 @@ func RunE(_ *cobra.Command, _ []string) error {
 		ObserverOrigin:                 viper.GetString(option.ObserverOrigin),
 		Observers:                      observers,
 		OpenApiSpecification:           openApiSpecification,
-		Port:                           viper.GetInt(option.HttpPort),
 		SenzingEngineConfigurationJson: senzingEngineConfigurationJson,
 		SenzingModuleName:              viper.GetString(option.EngineModuleName),
 		SenzingVerboseLogging:          viper.GetInt(option.EngineLogLevel),
+		ServerAddress:                  viper.GetString(optionServerAddr),
+		ServerPort:                     viper.GetInt(option.HttpPort),
 		SwaggerUrlRoutePrefix:          "swagger",
+		XtermAllowedHostnames:          viper.GetStringSlice(optionAllowedHostnames),
+		XtermArguments:                 viper.GetStringSlice(optionArguments),
+		XtermCommand:                   viper.GetString(optionCommand),
+		XtermConnectionErrorLimit:      viper.GetInt(optionConnectionErrorLimit),
+		XtermKeepalivePingTimeout:      viper.GetInt(optionKeepalivePingTimeout),
+		XtermMaxBufferSizeBytes:        viper.GetInt(optionMaxBufferSizeBytes),
+		XtermPathLiveness:              viper.GetString(optionPathLiveness),
+		XtermPathMetrics:               viper.GetString(optionPathMetrics),
+		XtermPathReadiness:             viper.GetString(optionPathReadiness),
+		XtermPathXtermjs:               viper.GetString(optionPathXtermjs),
 		XtermUrlRoutePrefix:            "xterm",
+		XtermWorkingDir:                viper.GetString(optionWorkingDir),
 	}
 	err = httpServer.Serve(ctx)
 	return err
