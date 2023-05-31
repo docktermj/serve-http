@@ -6,6 +6,8 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"log"
+	"net"
 	"os"
 	"strings"
 	"time"
@@ -24,50 +26,55 @@ import (
 )
 
 const (
-	defaultCommand              string = "/bin/bash"
-	defaultConnectionErrorLimit int    = 10
-	defaultKeepalivePingTimeout int    = 20
-	defaultMaxBufferSizeBytes   int    = 512
-	defaultServerAddress        string = "0.0.0.0"
-	envarAllowedHostnames       string = "SENZING_TOOLS_XTERM_ALLOWED_HOSTNAMES"
-	envarArguments              string = "SENZING_TOOLS_XTERM_ARGUMENTS"
-	envarCommand                string = "SENZING_TOOLS_XTERM_COMMAND"
-	envarConnectionErrorLimit   string = "SENZING_TOOLS_XTERM_CONNECTION_ERROR_LIMIT"
-	envarKeepalivePingTimeout   string = "SENZING_TOOLS_XTERM_KEEPALIVE_PING_TIMEOUT"
-	envarMaxBufferSizeBytes     string = "SENZING_TOOLS_XTERM_MAX_BUFFER_SIZE_BYTES"
-	envarServerAddress          string = "SENZING_TOOLS_SERVER_ADDRESS"
-	optionAllowedHostnames      string = "xterm-allowed-hostnames"
-	optionArguments             string = "xterm-arguments"
-	optionCommand               string = "xterm-command"
-	optionConnectionErrorLimit  string = "xterm-connection-error-limit"
-	optionKeepalivePingTimeout  string = "xterm-keepalive-ping-timeout"
-	optionMaxBufferSizeBytes    string = "xterm-max-buffer-size-bytes"
-	optionServerAddress         string = "server-address"
-
-	defaultConfiguration           string = ""
-	defaultDatabaseUrl             string = ""
-	defaultEnableAll               bool   = false
-	defaultEnableSenzingRestApi    bool   = false
-	defaultEnableSwaggerUI         bool   = false
-	defaultEnableXterm             bool   = false
-	defaultEngineConfigurationJson string = ""
-	defaultEngineLogLevel          int    = 0
-	defaultGrpcUrl                        = ""
-	defaultHttpPort                int    = 8261
-	defaultLogLevel                string = "INFO"
-	defaultObserverOrigin          string = "serve-http"
-	defaultObserverUrl             string = ""
-	Short                          string = "serve-http short description"
-	Use                            string = "serve-http"
-	Long                           string = `
+	defaultConfiguration             string = ""
+	defaultDatabaseUrl               string = ""
+	defaultEnableAll                 bool   = false
+	defaultEnableSenzingRestApi      bool   = false
+	defaultEnableSwaggerUI           bool   = false
+	defaultEnableXterm               bool   = false
+	defaultEngineConfigurationJson   string = ""
+	defaultEngineLogLevel            int    = 0
+	defaultGrpcUrl                          = ""
+	defaultHttpPort                  int    = 8261
+	defaultLogLevel                  string = "INFO"
+	defaultObserverOrigin            string = "serve-http"
+	defaultObserverUrl               string = ""
+	defaultServerAddress             string = "0.0.0.0"
+	defaultXtermCommand              string = "/bin/bash"
+	defaultXtermConnectionErrorLimit int    = 10
+	defaultXtermKeepalivePingTimeout int    = 20
+	defaultXtermMaxBufferSizeBytes   int    = 512
+	envarEnableAll                   string = "SENZING_TOOLS_ENABLE_ALL"
+	envarEnableSenzingRestApi        string = "SENZING_TOOLS_ENABLE_SENZING_REST_API"
+	envarEnableXterm                 string = "SENZING_TOOLS_ENABLE_XTERM"
+	envarServerAddress               string = "SENZING_TOOLS_SERVER_ADDRESS"
+	envarXtermAllowedHostnames       string = "SENZING_TOOLS_XTERM_ALLOWED_HOSTNAMES"
+	envarXtermArguments              string = "SENZING_TOOLS_XTERM_ARGUMENTS"
+	envarXtermCommand                string = "SENZING_TOOLS_XTERM_COMMAND"
+	envarXtermConnectionErrorLimit   string = "SENZING_TOOLS_XTERM_CONNECTION_ERROR_LIMIT"
+	envarXtermKeepalivePingTimeout   string = "SENZING_TOOLS_XTERM_KEEPALIVE_PING_TIMEOUT"
+	envarXtermMaxBufferSizeBytes     string = "SENZING_TOOLS_XTERM_MAX_BUFFER_SIZE_BYTES"
+	optionEnableAll                  string = "enable-all"
+	optionEnableSenzingRestApi       string = "enable-senzing-rest-api"
+	optionEnableXterm                string = "enable-xterm"
+	optionServerAddress              string = "server-address"
+	optionXtermAllowedHostnames      string = "xterm-allowed-hostnames"
+	optionXtermArguments             string = "xterm-arguments"
+	optionXtermCommand               string = "xterm-command"
+	optionXtermConnectionErrorLimit  string = "xterm-connection-error-limit"
+	optionXtermKeepalivePingTimeout  string = "xterm-keepalive-ping-timeout"
+	optionXtermMaxBufferSizeBytes    string = "xterm-max-buffer-size-bytes"
+	Short                            string = "serve-http short description"
+	Use                              string = "serve-http"
+	Long                             string = `
 serve-http long description.
 	`
 )
 
 var (
-	defaultEngineModuleName string   = fmt.Sprintf("serve-http-%d", time.Now().Unix())
-	defaultAllowedHostnames []string = []string{"localhost", "192.168.1.12"}
-	defaultArguments        []string
+	defaultEngineModuleName      string   = fmt.Sprintf("serve-http-%d", time.Now().Unix())
+	defaultXtermAllowedHostnames []string = getDefaultAllowedHostnames()
+	defaultXtermArguments        []string
 )
 
 //go:embed senzing-openapi.json
@@ -79,29 +86,27 @@ var openApiSpecification []byte
 
 // Since init() is always invoked, define command line parameters.
 func init() {
-
-	RootCmd.Flags().Int(optionConnectionErrorLimit, defaultConnectionErrorLimit, fmt.Sprintf("Connection re-attempts before terminating [%s]", envarConnectionErrorLimit))
-	RootCmd.Flags().Int(optionKeepalivePingTimeout, defaultKeepalivePingTimeout, fmt.Sprintf("Maximum allowable seconds between a ping message and its response [%s]", envarKeepalivePingTimeout))
-	RootCmd.Flags().Int(optionMaxBufferSizeBytes, defaultMaxBufferSizeBytes, fmt.Sprintf("Maximum length of terminal input [%s]", envarMaxBufferSizeBytes))
-	RootCmd.Flags().String(optionCommand, defaultCommand, fmt.Sprintf("Path of shell command [%s]", envarCommand))
-	RootCmd.Flags().String(optionServerAddress, defaultServerAddress, fmt.Sprintf("IP interface server listens on [%s]", envarServerAddress))
-	RootCmd.Flags().StringSlice(optionAllowedHostnames, defaultAllowedHostnames, fmt.Sprintf("Comma-delimited list of hostnames permitted to connect to the websocket [%s]", envarAllowedHostnames))
-	RootCmd.Flags().StringSlice(optionArguments, defaultArguments, fmt.Sprintf("Comma-delimited list of arguments passed to the terminal command prompt [%s]", envarArguments))
-
-	RootCmd.Flags().Bool("enable-all", defaultEnableSwaggerUI, fmt.Sprintf("Enable all services [%s]", "SENZING_TOOLS_ENABLE_ALL"))
-	RootCmd.Flags().Bool("enable-senzing-rest-api", defaultEnableSwaggerUI, fmt.Sprintf("Enable the Senzing REST API service [%s]", "SENZING_TOOLS_ENABLE_SENZING_REST_API"))
 	RootCmd.Flags().Bool(option.EnableSwaggerUi, defaultEnableSwaggerUI, fmt.Sprintf("Enable the Swagger UI service [%s]", envar.EnableSwaggerUi))
-	RootCmd.Flags().Bool("enable-xterm", defaultEnableXterm, fmt.Sprintf("Enable the XTerm service [%s]", "SENZING_TOOLS_ENABLE_XTERM"))
-	RootCmd.Flags().Int(option.HttpPort, defaultHttpPort, fmt.Sprintf("Port to serve HTTP [%s]", envar.HttpPort))
+	RootCmd.Flags().Bool(optionEnableAll, defaultEnableSwaggerUI, fmt.Sprintf("Enable all services [%s]", envarEnableAll))
+	RootCmd.Flags().Bool(optionEnableSenzingRestApi, defaultEnableSwaggerUI, fmt.Sprintf("Enable the Senzing REST API service [%s]", envarEnableSenzingRestApi))
+	RootCmd.Flags().Bool(optionEnableXterm, defaultEnableXterm, fmt.Sprintf("Enable the XTerm service [%s]", envarEnableXterm))
 	RootCmd.Flags().Int(option.EngineLogLevel, defaultEngineLogLevel, fmt.Sprintf("Log level for Senzing Engine [%s]", envar.EngineLogLevel))
-	RootCmd.Flags().String(option.GrpcUrl, defaultGrpcUrl, fmt.Sprintf("URL of Senzing gRPC service [%s]", envar.GrpcUrl))
+	RootCmd.Flags().Int(option.HttpPort, defaultHttpPort, fmt.Sprintf("Port to serve HTTP [%s]", envar.HttpPort))
+	RootCmd.Flags().Int(optionXtermConnectionErrorLimit, defaultXtermConnectionErrorLimit, fmt.Sprintf("Connection re-attempts before terminating [%s]", envarXtermConnectionErrorLimit))
+	RootCmd.Flags().Int(optionXtermKeepalivePingTimeout, defaultXtermKeepalivePingTimeout, fmt.Sprintf("Maximum allowable seconds between a ping message and its response [%s]", envarXtermKeepalivePingTimeout))
+	RootCmd.Flags().Int(optionXtermMaxBufferSizeBytes, defaultXtermMaxBufferSizeBytes, fmt.Sprintf("Maximum length of terminal input [%s]", envarXtermMaxBufferSizeBytes))
 	RootCmd.Flags().String(option.Configuration, defaultConfiguration, fmt.Sprintf("Path to configuration file [%s]", envar.Configuration))
 	RootCmd.Flags().String(option.DatabaseUrl, defaultDatabaseUrl, fmt.Sprintf("URL of database to initialize [%s]", envar.DatabaseUrl))
 	RootCmd.Flags().String(option.EngineConfigurationJson, defaultEngineConfigurationJson, fmt.Sprintf("JSON string sent to Senzing's init() function [%s]", envar.EngineConfigurationJson))
 	RootCmd.Flags().String(option.EngineModuleName, defaultEngineModuleName, fmt.Sprintf("Identifier given to the Senzing engine [%s]", envar.EngineModuleName))
+	RootCmd.Flags().String(option.GrpcUrl, defaultGrpcUrl, fmt.Sprintf("URL of Senzing gRPC service [%s]", envar.GrpcUrl))
 	RootCmd.Flags().String(option.LogLevel, defaultLogLevel, fmt.Sprintf("Log level [%s]", envar.LogLevel))
 	RootCmd.Flags().String(option.ObserverOrigin, defaultObserverOrigin, fmt.Sprintf("Identify this instance to the Observer [%s]", envar.ObserverOrigin))
 	RootCmd.Flags().String(option.ObserverUrl, defaultObserverUrl, fmt.Sprintf("URL of Observer [%s]", envar.ObserverUrl))
+	RootCmd.Flags().String(optionServerAddress, defaultServerAddress, fmt.Sprintf("IP interface server listens on [%s]", envarServerAddress))
+	RootCmd.Flags().String(optionXtermCommand, defaultXtermCommand, fmt.Sprintf("Path of shell command [%s]", envarXtermCommand))
+	RootCmd.Flags().StringSlice(optionXtermAllowedHostnames, defaultXtermAllowedHostnames, fmt.Sprintf("Comma-delimited list of hostnames permitted to connect to the websocket [%s]", envarXtermAllowedHostnames))
+	RootCmd.Flags().StringSlice(optionXtermArguments, defaultXtermArguments, fmt.Sprintf("Comma-delimited list of arguments passed to the terminal command prompt [%s]", envarXtermArguments))
 }
 
 // If a configuration file is present, load it.
@@ -150,10 +155,10 @@ func loadOptions(cobraCommand *cobra.Command) {
 	// Bools
 
 	boolOptions := map[string]bool{
-		"enable-all":              defaultEnableAll,
-		"enable-senzing-rest-api": defaultEnableSenzingRestApi,
-		option.EnableSwaggerUi:    defaultEnableSwaggerUI,
-		"enable-xterm":            defaultEnableXterm,
+		optionEnableAll:            defaultEnableAll,
+		optionEnableSenzingRestApi: defaultEnableSenzingRestApi,
+		option.EnableSwaggerUi:     defaultEnableSwaggerUI,
+		optionEnableXterm:          defaultEnableXterm,
 	}
 	for optionKey, optionValue := range boolOptions {
 		viper.SetDefault(optionKey, optionValue)
@@ -166,11 +171,11 @@ func loadOptions(cobraCommand *cobra.Command) {
 	// Ints
 
 	intOptions := map[string]int{
-		option.EngineLogLevel:      defaultEngineLogLevel,
-		option.HttpPort:            defaultHttpPort,
-		optionConnectionErrorLimit: defaultConnectionErrorLimit,
-		optionKeepalivePingTimeout: defaultKeepalivePingTimeout,
-		optionMaxBufferSizeBytes:   defaultMaxBufferSizeBytes,
+		option.EngineLogLevel:           defaultEngineLogLevel,
+		option.HttpPort:                 defaultHttpPort,
+		optionXtermConnectionErrorLimit: defaultXtermConnectionErrorLimit,
+		optionXtermKeepalivePingTimeout: defaultXtermKeepalivePingTimeout,
+		optionXtermMaxBufferSizeBytes:   defaultXtermMaxBufferSizeBytes,
 	}
 	for optionKey, optionValue := range intOptions {
 		viper.SetDefault(optionKey, optionValue)
@@ -191,7 +196,7 @@ func loadOptions(cobraCommand *cobra.Command) {
 		option.ObserverOrigin:          defaultObserverOrigin,
 		option.ObserverUrl:             defaultObserverUrl,
 		option.GrpcUrl:                 defaultGrpcUrl,
-		optionCommand:                  defaultCommand,
+		optionXtermCommand:             defaultXtermCommand,
 		optionServerAddress:            defaultServerAddress,
 	}
 	for optionKey, optionValue := range stringOptions {
@@ -205,8 +210,8 @@ func loadOptions(cobraCommand *cobra.Command) {
 	// StringSlice
 
 	stringSliceOptions := map[string][]string{
-		optionAllowedHostnames: defaultAllowedHostnames,
-		optionArguments:        defaultArguments,
+		optionXtermAllowedHostnames: defaultXtermAllowedHostnames,
+		optionXtermArguments:        defaultXtermArguments,
 	}
 	for optionKey, optionValue := range stringSliceOptions {
 		viper.SetDefault(optionKey, optionValue)
@@ -216,6 +221,27 @@ func loadOptions(cobraCommand *cobra.Command) {
 		}
 	}
 
+}
+
+// --- Networking -------------------------------------------------------------
+
+func getOutboundIP() net.IP {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+	return localAddr.IP
+}
+
+func getDefaultAllowedHostnames() []string {
+	result := []string{"localhost"}
+	outboundIpAddress := getOutboundIP().String()
+	if len(outboundIpAddress) > 0 {
+		result = append(result, outboundIpAddress)
+	}
+	return result
 }
 
 // ----------------------------------------------------------------------------
@@ -274,10 +300,10 @@ func RunE(_ *cobra.Command, _ []string) error {
 
 	httpServer := &httpserver.HttpServerImpl{
 		ApiUrlRoutePrefix:              "api",
-		EnableAll:                      viper.GetBool("enable-all"),
-		EnableSenzingRestAPI:           viper.GetBool("enable-senzing-rest-api"),
+		EnableAll:                      viper.GetBool(optionEnableAll),
+		EnableSenzingRestAPI:           viper.GetBool(optionEnableSenzingRestApi),
 		EnableSwaggerUI:                viper.GetBool(option.EnableSwaggerUi),
-		EnableXterm:                    viper.GetBool("enable-xterm"),
+		EnableXterm:                    viper.GetBool(optionEnableXterm),
 		GrpcDialOptions:                grpcDialOptions,
 		GrpcTarget:                     grpcTarget,
 		LogLevelName:                   viper.GetString(option.LogLevel),
@@ -290,12 +316,12 @@ func RunE(_ *cobra.Command, _ []string) error {
 		ServerAddress:                  viper.GetString(optionServerAddress),
 		ServerPort:                     viper.GetInt(option.HttpPort),
 		SwaggerUrlRoutePrefix:          "swagger",
-		XtermAllowedHostnames:          viper.GetStringSlice(optionAllowedHostnames),
-		XtermArguments:                 viper.GetStringSlice(optionArguments),
-		XtermCommand:                   viper.GetString(optionCommand),
-		XtermConnectionErrorLimit:      viper.GetInt(optionConnectionErrorLimit),
-		XtermKeepalivePingTimeout:      viper.GetInt(optionKeepalivePingTimeout),
-		XtermMaxBufferSizeBytes:        viper.GetInt(optionMaxBufferSizeBytes),
+		XtermAllowedHostnames:          viper.GetStringSlice(optionXtermAllowedHostnames),
+		XtermArguments:                 viper.GetStringSlice(optionXtermArguments),
+		XtermCommand:                   viper.GetString(optionXtermCommand),
+		XtermConnectionErrorLimit:      viper.GetInt(optionXtermConnectionErrorLimit),
+		XtermKeepalivePingTimeout:      viper.GetInt(optionXtermKeepalivePingTimeout),
+		XtermMaxBufferSizeBytes:        viper.GetInt(optionXtermMaxBufferSizeBytes),
 		XtermUrlRoutePrefix:            "xterm",
 	}
 	err = httpServer.Serve(ctx)
