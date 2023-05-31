@@ -70,6 +70,9 @@ var (
 	defaultArguments        []string
 )
 
+//go:embed senzing-openapi.json
+var openApiSpecification []byte
+
 // ----------------------------------------------------------------------------
 // Private functions
 // ----------------------------------------------------------------------------
@@ -280,6 +283,7 @@ func RunE(_ *cobra.Command, _ []string) error {
 		LogLevelName:                   viper.GetString(option.LogLevel),
 		ObserverOrigin:                 viper.GetString(option.ObserverOrigin),
 		Observers:                      observers,
+		OpenApiSpecification:           openApiSpecification,
 		SenzingEngineConfigurationJson: senzingEngineConfigurationJson,
 		SenzingModuleName:              viper.GetString(option.EngineModuleName),
 		SenzingVerboseLogging:          viper.GetInt(option.EngineLogLevel),

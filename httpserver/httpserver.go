@@ -35,6 +35,8 @@ type HttpServerImpl struct {
 	LogLevelName                   string
 	ObserverOrigin                 string
 	Observers                      []observer.Observer
+	OpenApiSpecification           []byte
+	openApiSpecificationTemplate   *template.Template
 	SenzingEngineConfigurationJson string
 	SenzingModuleName              string
 	SenzingVerboseLogging          int
@@ -92,27 +94,41 @@ func (httpServer *HttpServerImpl) populateStaticTemplate(responseWriter http.Res
 	}
 }
 
-func (httpServer *HttpServerImpl) populateStaticTemplateBytes(filepath string, templateVariables TemplateVariables) []byte {
-	var result []byte
-	templateBytes, err := static.ReadFile(filepath)
-	if err != nil {
-		return result
-	}
-	templateParsed, err := template.New("HtmlTemplate").Parse(string(templateBytes))
-	if err != nil {
-		return result
-	}
+// func (httpServer *HttpServerImpl) populateStaticTemplateBytes(filepath string, templateVariables TemplateVariables) []byte {
+// 	var result []byte
+// 	templateBytes, err := static.ReadFile(filepath)
+// 	if err != nil {
+// 		return result
+// 	}
+// 	templateParsed, err := template.New("HtmlTemplate").Parse(string(templateBytes))
+// 	if err != nil {
+// 		return result
+// 	}
 
-	var b bytes.Buffer
-	foo := bufio.NewWriter(&b)
+// 	fmt.Printf(">>>>>> templateParsed: %s\n", reflect.TypeOf(templateParsed))
 
-	err = templateParsed.Execute(foo, templateVariables)
-	if err != nil {
-		return result
+// 	var b bytes.Buffer
+// 	foo := bufio.NewWriter(&b)
+
+// 	err = templateParsed.Execute(foo, templateVariables)
+// 	if err != nil {
+// 		return result
+// 	}
+// 	result = b.Bytes()
+// 	return result
+
+// }
+
+func (httpServer *HttpServerImpl) populateOpenApiSpecification(templateVariables TemplateVariables) []byte {
+	var bytesBuffer bytes.Buffer
+	bufioWriter := bufio.NewWriter(&bytesBuffer)
+	if httpServer.openApiSpecificationTemplate != nil {
+		err := httpServer.openApiSpecificationTemplate.Execute(bufioWriter, templateVariables)
+		if err != nil {
+			panic(err)
+		}
 	}
-	result = b.Bytes()
-	return result
-
+	return bytesBuffer.Bytes()
 }
 
 func (httpServer *HttpServerImpl) getServerStatus(up bool) string {
@@ -142,8 +158,7 @@ func (httpServer *HttpServerImpl) openApiFunc() http.HandlerFunc {
 		templateVariables := TemplateVariables{
 			RequestHost: r.Host,
 		}
-		specInBytes := httpServer.populateStaticTemplateBytes("static/templates/senzing-openapi.json", templateVariables)
-		w.Write(specInBytes)
+		w.Write(httpServer.populateOpenApiSpecification(templateVariables))
 	}
 }
 
@@ -191,7 +206,12 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 	// Enable SwaggerUI at /swagger.
 
 	if httpServer.EnableAll || httpServer.EnableSwaggerUI {
-		swaggerMux := swaggerui.Handler([]byte{}) // OpenAPI specification nandled by openApiFunc()
+		var err error = nil
+		httpServer.openApiSpecificationTemplate, err = template.New("OpenApiTemplate").Parse(string(httpServer.OpenApiSpecification))
+		if err != nil {
+			panic(err)
+		}
+		swaggerMux := swaggerui.Handler([]byte{}) // OpenAPI specification handled by openApiFunc()
 		swaggerFunc := swaggerMux.ServeHTTP
 		submux := http.NewServeMux()
 		submux.HandleFunc("/", swaggerFunc)
