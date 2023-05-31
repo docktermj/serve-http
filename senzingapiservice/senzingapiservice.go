@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	api "github.com/docktermj/go-http/senzinghttpapi"
+	api "github.com/docktermj/go-rest-api-client/senzingrestapi"
 	"github.com/senzing/g2-sdk-go/g2api"
 	"github.com/senzing/go-logging/logging"
 	"github.com/senzing/go-observing/observer"
@@ -196,7 +196,7 @@ func (httpService *HttpServiceImpl) getOptSzMeta() api.OptSzMeta {
 
 // ----------------------------------------------------------------------------
 // Interface methods
-// See https://github.com/docktermj/go-http/blob/main/senzinghttpapi/oas_unimplemented_gen.go
+// See https://github.com/docktermj/go-rest-api-client/blob/main/senzingrestpapi/oas_unimplemented_gen.go
 // ----------------------------------------------------------------------------
 
 func (httpService *HttpServiceImpl) AddDataSources(ctx context.Context, req api.AddDataSourcesReq, params api.AddDataSourcesParams) (r api.AddDataSourcesRes, _ error) {

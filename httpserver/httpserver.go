@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/docktermj/cloudshell/xtermservice"
-	"github.com/docktermj/go-http/senzinghttpapi"
+	"github.com/docktermj/go-rest-api-client/senzingrestapi"
 	"github.com/docktermj/serve-http/senzingapiservice"
 	"github.com/flowchartsman/swaggerui"
 	"github.com/senzing/go-observing/observer"
@@ -43,7 +43,7 @@ type HttpServerImpl struct {
 	SenzingModuleName              string
 	SenzingVerboseLogging          int
 	ServerAddress                  string
-	ServerOptions                  []senzinghttpapi.ServerOption
+	ServerOptions                  []senzingrestapi.ServerOption
 	ServerPort                     int
 	SwaggerUrlRoutePrefix          string // FIXME: Only works with "swagger"
 	XtermAllowedHostnames          []string
@@ -143,7 +143,7 @@ func (httpServer *HttpServerImpl) populateOpenApiSpecification(templateVariables
 
 // --- http.ServeMux ----------------------------------------------------------
 
-func (httpServer *HttpServerImpl) getSenzingApiMux(ctx context.Context) *senzinghttpapi.Server {
+func (httpServer *HttpServerImpl) getSenzingApiMux(ctx context.Context) *senzingrestapi.Server {
 	service := &senzingapiservice.HttpServiceImpl{
 		GrpcDialOptions:                httpServer.GrpcDialOptions,
 		GrpcTarget:                     httpServer.GrpcTarget,
@@ -154,7 +154,7 @@ func (httpServer *HttpServerImpl) getSenzingApiMux(ctx context.Context) *senzing
 		SenzingModuleName:              httpServer.SenzingModuleName,
 		SenzingVerboseLogging:          httpServer.SenzingVerboseLogging,
 	}
-	srv, err := senzinghttpapi.NewServer(service, httpServer.ServerOptions...)
+	srv, err := senzingrestapi.NewServer(service, httpServer.ServerOptions...)
 	if err != nil {
 		log.Fatal(err)
 	}

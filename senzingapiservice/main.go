@@ -1,7 +1,7 @@
 package senzingapiservice
 
 import (
-	"github.com/docktermj/go-http/senzinghttpapi"
+	"github.com/docktermj/go-rest-api-client/senzingrestapi"
 )
 
 // ----------------------------------------------------------------------------
@@ -10,7 +10,7 @@ import (
 
 // The HttpService interface is...
 type HttpService interface {
-	senzinghttpapi.Handler
+	senzingrestapi.Handler
 }
 
 // ----------------------------------------------------------------------------
