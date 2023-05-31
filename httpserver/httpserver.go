@@ -94,31 +94,6 @@ func (httpServer *HttpServerImpl) populateStaticTemplate(responseWriter http.Res
 	}
 }
 
-// func (httpServer *HttpServerImpl) populateStaticTemplateBytes(filepath string, templateVariables TemplateVariables) []byte {
-// 	var result []byte
-// 	templateBytes, err := static.ReadFile(filepath)
-// 	if err != nil {
-// 		return result
-// 	}
-// 	templateParsed, err := template.New("HtmlTemplate").Parse(string(templateBytes))
-// 	if err != nil {
-// 		return result
-// 	}
-
-// 	fmt.Printf(">>>>>> templateParsed: %s\n", reflect.TypeOf(templateParsed))
-
-// 	var b bytes.Buffer
-// 	foo := bufio.NewWriter(&b)
-
-// 	err = templateParsed.Execute(foo, templateVariables)
-// 	if err != nil {
-// 		return result
-// 	}
-// 	result = b.Bytes()
-// 	return result
-
-// }
-
 func (httpServer *HttpServerImpl) populateOpenApiSpecification(templateVariables TemplateVariables) []byte {
 	var bytesBuffer bytes.Buffer
 	bufioWriter := bufio.NewWriter(&bytesBuffer)
@@ -237,9 +212,9 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 		userMessage = fmt.Sprintf("%sServing XTerm at http://localhost:%d/%s\n", userMessage, httpServer.ServerPort, httpServer.XtermUrlRoutePrefix)
 	}
 
-	// Add routes for template pages.
+	// Add route for template pages.
 
-	rootMux.HandleFunc("/overview.html", func(w http.ResponseWriter, r *http.Request) {
+	rootMux.HandleFunc("/site/", func(w http.ResponseWriter, r *http.Request) {
 		templateVariables := TemplateVariables{
 			HttpServerImpl:  *httpServer,
 			HtmlTitle:       "Senzing Tools",
@@ -251,7 +226,8 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 			XtermStatus:     httpServer.getServerStatus(httpServer.EnableXterm),
 		}
 		w.Header().Set("Content-Type", "text/html")
-		httpServer.populateStaticTemplate(w, r, "static/templates/overview.html", templateVariables)
+		filePath := fmt.Sprintf("static/templates%s", r.RequestURI)
+		httpServer.populateStaticTemplate(w, r, filePath, templateVariables)
 	})
 
 	// Add route to static files.

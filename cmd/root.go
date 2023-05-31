@@ -155,9 +155,9 @@ func loadOptions(cobraCommand *cobra.Command) {
 	// Bools
 
 	boolOptions := map[string]bool{
+		option.EnableSwaggerUi:     defaultEnableSwaggerUI,
 		optionEnableAll:            defaultEnableAll,
 		optionEnableSenzingRestApi: defaultEnableSenzingRestApi,
-		option.EnableSwaggerUi:     defaultEnableSwaggerUI,
 		optionEnableXterm:          defaultEnableXterm,
 	}
 	for optionKey, optionValue := range boolOptions {
@@ -192,12 +192,12 @@ func loadOptions(cobraCommand *cobra.Command) {
 		option.DatabaseUrl:             defaultDatabaseUrl,
 		option.EngineConfigurationJson: defaultEngineConfigurationJson,
 		option.EngineModuleName:        defaultEngineModuleName,
+		option.GrpcUrl:                 defaultGrpcUrl,
 		option.LogLevel:                defaultLogLevel,
 		option.ObserverOrigin:          defaultObserverOrigin,
 		option.ObserverUrl:             defaultObserverUrl,
-		option.GrpcUrl:                 defaultGrpcUrl,
-		optionXtermCommand:             defaultXtermCommand,
 		optionServerAddress:            defaultServerAddress,
+		optionXtermCommand:             defaultXtermCommand,
 	}
 	for optionKey, optionValue := range stringOptions {
 		viper.SetDefault(optionKey, optionValue)
