@@ -1,6 +1,8 @@
 package httpserver
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"embed"
 	"fmt"
@@ -33,7 +35,6 @@ type HttpServerImpl struct {
 	LogLevelName                   string
 	ObserverOrigin                 string
 	Observers                      []observer.Observer
-	OpenApiSpecification           []byte
 	SenzingEngineConfigurationJson string
 	SenzingModuleName              string
 	SenzingVerboseLogging          int
@@ -55,6 +56,7 @@ type TemplateVariables struct {
 	ApiServerStatus string
 	ApiServerUrl    string
 	HtmlTitle       string
+	RequestHost     string
 	SwaggerStatus   string
 	SwaggerUrl      string
 	XtermStatus     string
@@ -90,6 +92,29 @@ func (httpServer *HttpServerImpl) populateStaticTemplate(responseWriter http.Res
 	}
 }
 
+func (httpServer *HttpServerImpl) populateStaticTemplateBytes(filepath string, templateVariables TemplateVariables) []byte {
+	var result []byte
+	templateBytes, err := static.ReadFile(filepath)
+	if err != nil {
+		return result
+	}
+	templateParsed, err := template.New("HtmlTemplate").Parse(string(templateBytes))
+	if err != nil {
+		return result
+	}
+
+	var b bytes.Buffer
+	foo := bufio.NewWriter(&b)
+
+	err = templateParsed.Execute(foo, templateVariables)
+	if err != nil {
+		return result
+	}
+	result = b.Bytes()
+	return result
+
+}
+
 func (httpServer *HttpServerImpl) getServerStatus(up bool) string {
 	result := "red"
 	if httpServer.EnableAll {
@@ -110,6 +135,16 @@ func (httpServer *HttpServerImpl) getServerUrl(up bool, url string) string {
 		result = url
 	}
 	return result
+}
+
+func (httpServer *HttpServerImpl) openApiFunc() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		templateVariables := TemplateVariables{
+			RequestHost: r.Host,
+		}
+		specInBytes := httpServer.populateStaticTemplateBytes("static/templates/senzing-openapi.json", templateVariables)
+		w.Write(specInBytes)
+	}
 }
 
 // ----------------------------------------------------------------------------
@@ -156,10 +191,11 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 	// Enable SwaggerUI at /swagger.
 
 	if httpServer.EnableAll || httpServer.EnableSwaggerUI {
-		swaggerMux := swaggerui.Handler(httpServer.OpenApiSpecification)
+		swaggerMux := swaggerui.Handler([]byte{}) // OpenAPI specification nandled by openApiFunc()
 		swaggerFunc := swaggerMux.ServeHTTP
 		submux := http.NewServeMux()
 		submux.HandleFunc("/", swaggerFunc)
+		submux.HandleFunc("/swagger_spec", httpServer.openApiFunc())
 		rootMux.Handle(fmt.Sprintf("/%s/", httpServer.SwaggerUrlRoutePrefix), http.StripPrefix("/swagger", submux))
 		userMessage = fmt.Sprintf("%sServing SwaggerUI at http://localhost:%d/%s\n", userMessage, httpServer.ServerPort, httpServer.SwaggerUrlRoutePrefix)
 	}

@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:8261/api"
+      "url": "http://{{.RequestHost}}/api"
     },
     {
       "url": "{protocol}://{host}:{port}{path}",
