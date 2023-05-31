@@ -3,8 +3,8 @@ module github.com/docktermj/serve-http
 go 1.20
 
 require (
-	github.com/docktermj/cloudshell v0.0.0-20230529134850-f9bd0c9a23f4
-	github.com/docktermj/go-rest-api-client v0.0.0-20230522133317-2ced1ab627ee
+	github.com/docktermj/cloudshell v0.2.0
+	github.com/docktermj/go-rest-api-client v0.1.2
 	github.com/flowchartsman/swaggerui v0.0.0-20221017034628-909ed4f3701b
 	github.com/senzing/g2-sdk-go v0.6.4
 	github.com/senzing/go-common v0.1.3
@@ -76,9 +76,4 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-)
-
-replace (
-	github.com/docktermj/cloudshell v0.0.0-20230529134850-f9bd0c9a23f4 => /home/senzing/docktermj.git/cloudshell
-	github.com/docktermj/go-rest-api-client v0.0.0-20230522133317-2ced1ab627ee => /home/senzing/docktermj.git/go-rest-api-client
 )
