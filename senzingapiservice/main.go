@@ -1,4 +1,4 @@
-package httpservice
+package senzingapiservice
 
 import (
 	"github.com/docktermj/go-http/senzinghttpapi"

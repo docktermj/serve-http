@@ -10,10 +10,11 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/docktermj/cloudshell/xtermservice"
 	"github.com/docktermj/go-http/senzinghttpapi"
-	"github.com/docktermj/serve-http/httpservice"
+	"github.com/docktermj/serve-http/senzingapiservice"
 	"github.com/flowchartsman/swaggerui"
 	"github.com/senzing/go-observing/observer"
 	"google.golang.org/grpc"
@@ -37,6 +38,7 @@ type HttpServerImpl struct {
 	Observers                      []observer.Observer
 	OpenApiSpecification           []byte
 	openApiSpecificationTemplate   *template.Template
+	ReadHeaderTimeout              time.Duration
 	SenzingEngineConfigurationJson string
 	SenzingModuleName              string
 	SenzingVerboseLogging          int
@@ -76,6 +78,39 @@ var static embed.FS
 // Internal methods
 // ----------------------------------------------------------------------------
 
+func (httpServer *HttpServerImpl) getServerStatus(up bool) string {
+	result := "red"
+	if httpServer.EnableAll {
+		result = "green"
+	}
+	if up {
+		result = "green"
+	}
+	return result
+}
+
+func (httpServer *HttpServerImpl) getServerUrl(up bool, url string) string {
+	result := ""
+	if httpServer.EnableAll {
+		result = url
+	}
+	if up {
+		result = url
+	}
+	return result
+}
+
+func (httpServer *HttpServerImpl) openApiFunc() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		templateVariables := TemplateVariables{
+			RequestHost: r.Host,
+		}
+		_, err := w.Write(httpServer.populateOpenApiSpecification(templateVariables))
+		if err != nil {
+			panic(err)
+		}
+	}
+}
 func (httpServer *HttpServerImpl) populateStaticTemplate(responseWriter http.ResponseWriter, request *http.Request, filepath string, templateVariables TemplateVariables) {
 	templateBytes, err := static.ReadFile(filepath)
 	if err != nil {
@@ -106,35 +141,69 @@ func (httpServer *HttpServerImpl) populateOpenApiSpecification(templateVariables
 	return bytesBuffer.Bytes()
 }
 
-func (httpServer *HttpServerImpl) getServerStatus(up bool) string {
-	result := "red"
-	if httpServer.EnableAll {
-		result = "green"
+// --- http.ServeMux ----------------------------------------------------------
+
+func (httpServer *HttpServerImpl) getSenzingApiMux(ctx context.Context) *senzinghttpapi.Server {
+	service := &senzingapiservice.HttpServiceImpl{
+		GrpcDialOptions:                httpServer.GrpcDialOptions,
+		GrpcTarget:                     httpServer.GrpcTarget,
+		LogLevelName:                   httpServer.LogLevelName,
+		ObserverOrigin:                 httpServer.ObserverOrigin,
+		Observers:                      httpServer.Observers,
+		SenzingEngineConfigurationJson: httpServer.SenzingEngineConfigurationJson,
+		SenzingModuleName:              httpServer.SenzingModuleName,
+		SenzingVerboseLogging:          httpServer.SenzingVerboseLogging,
 	}
-	if up {
-		result = "green"
+	srv, err := senzinghttpapi.NewServer(service, httpServer.ServerOptions...)
+	if err != nil {
+		log.Fatal(err)
 	}
-	return result
+	return srv
 }
 
-func (httpServer *HttpServerImpl) getServerUrl(up bool, url string) string {
-	result := ""
-	if httpServer.EnableAll {
-		result = url
+func (httpServer *HttpServerImpl) getSwaggerUiMux(ctx context.Context) *http.ServeMux {
+	var err error = nil
+	httpServer.openApiSpecificationTemplate, err = template.New("OpenApiTemplate").Parse(string(httpServer.OpenApiSpecification))
+	if err != nil {
+		panic(err)
 	}
-	if up {
-		result = url
-	}
-	return result
+	swaggerMux := swaggerui.Handler([]byte{}) // OpenAPI specification handled by openApiFunc()
+	swaggerFunc := swaggerMux.ServeHTTP
+	submux := http.NewServeMux()
+	submux.HandleFunc("/", swaggerFunc)
+	submux.HandleFunc("/swagger_spec", httpServer.openApiFunc())
+	return submux
 }
 
-func (httpServer *HttpServerImpl) openApiFunc() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		templateVariables := TemplateVariables{
-			RequestHost: r.Host,
-		}
-		w.Write(httpServer.populateOpenApiSpecification(templateVariables))
+func (httpServer *HttpServerImpl) getXtermMux(ctx context.Context) *http.ServeMux {
+	xtermService := &xtermservice.XtermServiceImpl{
+		AllowedHostnames:     httpServer.XtermAllowedHostnames,
+		Arguments:            httpServer.XtermArguments,
+		Command:              httpServer.XtermCommand,
+		ConnectionErrorLimit: httpServer.XtermConnectionErrorLimit,
+		KeepalivePingTimeout: httpServer.XtermKeepalivePingTimeout,
+		MaxBufferSizeBytes:   httpServer.XtermMaxBufferSizeBytes,
+		UrlRoutePrefix:       httpServer.XtermUrlRoutePrefix,
 	}
+	return xtermService.Handler(ctx)
+}
+
+// --- Http Funcs -------------------------------------------------------------
+
+func (httpServer *HttpServerImpl) siteFunc(w http.ResponseWriter, r *http.Request) {
+	templateVariables := TemplateVariables{
+		HttpServerImpl:  *httpServer,
+		HtmlTitle:       "Senzing Tools",
+		ApiServerUrl:    httpServer.getServerUrl(httpServer.EnableSenzingRestAPI, fmt.Sprintf("http://%s/api", r.Host)),
+		ApiServerStatus: httpServer.getServerStatus(httpServer.EnableSenzingRestAPI),
+		SwaggerUrl:      httpServer.getServerUrl(httpServer.EnableSwaggerUI, fmt.Sprintf("http://%s/swagger", r.Host)),
+		SwaggerStatus:   httpServer.getServerStatus(httpServer.EnableSwaggerUI),
+		XtermUrl:        httpServer.getServerUrl(httpServer.EnableXterm, fmt.Sprintf("http://%s/xterm", r.Host)),
+		XtermStatus:     httpServer.getServerStatus(httpServer.EnableXterm),
+	}
+	w.Header().Set("Content-Type", "text/html")
+	filePath := fmt.Sprintf("static/templates%s", r.RequestURI)
+	httpServer.populateStaticTemplate(w, r, filePath, templateVariables)
 }
 
 // ----------------------------------------------------------------------------
@@ -154,81 +223,36 @@ Output
 
 func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 	rootMux := http.NewServeMux()
-	listenOnAddress := fmt.Sprintf("%s:%v", httpServer.ServerAddress, httpServer.ServerPort)
-	var userMessage = fmt.Sprintf("Starting server on interface:port '%s'\nServing on http://localhost:%d\n\n", listenOnAddress, httpServer.ServerPort)
+	var userMessage string = ""
 
 	// Enable Senzing HTTP REST API.
 
 	if httpServer.EnableAll || httpServer.EnableSenzingRestAPI {
-		service := &httpservice.HttpServiceImpl{
-			GrpcDialOptions:                httpServer.GrpcDialOptions,
-			GrpcTarget:                     httpServer.GrpcTarget,
-			LogLevelName:                   httpServer.LogLevelName,
-			ObserverOrigin:                 httpServer.ObserverOrigin,
-			Observers:                      httpServer.Observers,
-			SenzingEngineConfigurationJson: httpServer.SenzingEngineConfigurationJson,
-			SenzingModuleName:              httpServer.SenzingModuleName,
-			SenzingVerboseLogging:          httpServer.SenzingVerboseLogging,
-		}
-		srv, err := senzinghttpapi.NewServer(service, httpServer.ServerOptions...)
-		if err != nil {
-			log.Fatal(err)
-		}
-		rootMux.Handle(fmt.Sprintf("/%s/", httpServer.ApiUrlRoutePrefix), http.StripPrefix("/api", srv))
+		senzingApiMux := httpServer.getSenzingApiMux(ctx)
+		rootMux.Handle(fmt.Sprintf("/%s/", httpServer.ApiUrlRoutePrefix), http.StripPrefix("/api", senzingApiMux))
 		userMessage = fmt.Sprintf("%sServing Senzing REST API at http://localhost:%d/%s\n", userMessage, httpServer.ServerPort, httpServer.ApiUrlRoutePrefix)
 	}
 
-	// Enable SwaggerUI at /swagger.
+	// Enable SwaggerUI.
 
 	if httpServer.EnableAll || httpServer.EnableSwaggerUI {
-		var err error = nil
-		httpServer.openApiSpecificationTemplate, err = template.New("OpenApiTemplate").Parse(string(httpServer.OpenApiSpecification))
-		if err != nil {
-			panic(err)
-		}
-		swaggerMux := swaggerui.Handler([]byte{}) // OpenAPI specification handled by openApiFunc()
-		swaggerFunc := swaggerMux.ServeHTTP
-		submux := http.NewServeMux()
-		submux.HandleFunc("/", swaggerFunc)
-		submux.HandleFunc("/swagger_spec", httpServer.openApiFunc())
-		rootMux.Handle(fmt.Sprintf("/%s/", httpServer.SwaggerUrlRoutePrefix), http.StripPrefix("/swagger", submux))
-		userMessage = fmt.Sprintf("%sServing SwaggerUI at http://localhost:%d/%s\n", userMessage, httpServer.ServerPort, httpServer.SwaggerUrlRoutePrefix)
+		swaggerUiMux := httpServer.getSwaggerUiMux(ctx)
+		rootMux.Handle(fmt.Sprintf("/%s/", httpServer.SwaggerUrlRoutePrefix), http.StripPrefix("/swagger", swaggerUiMux))
+		userMessage = fmt.Sprintf("%sServing SwaggerUI at        http://localhost:%d/%s\n", userMessage, httpServer.ServerPort, httpServer.SwaggerUrlRoutePrefix)
 	}
 
-	// Enable Xterm at /xterm.
+	// Enable Xterm.
 
 	if httpServer.EnableAll || httpServer.EnableXterm {
-		xtermService := &xtermservice.XtermServiceImpl{
-			AllowedHostnames:     httpServer.XtermAllowedHostnames,
-			Arguments:            httpServer.XtermArguments,
-			Command:              httpServer.XtermCommand,
-			ConnectionErrorLimit: httpServer.XtermConnectionErrorLimit,
-			KeepalivePingTimeout: httpServer.XtermKeepalivePingTimeout,
-			MaxBufferSizeBytes:   httpServer.XtermMaxBufferSizeBytes,
-			UrlRoutePrefix:       httpServer.XtermUrlRoutePrefix,
-		}
-		xtermMux := xtermService.Handler(ctx) // Returns *http.ServeMux
+		xtermMux := httpServer.getXtermMux(ctx)
 		rootMux.Handle(fmt.Sprintf("/%s/", httpServer.XtermUrlRoutePrefix), http.StripPrefix("/xterm", xtermMux))
-		userMessage = fmt.Sprintf("%sServing XTerm at http://localhost:%d/%s\n", userMessage, httpServer.ServerPort, httpServer.XtermUrlRoutePrefix)
+		userMessage = fmt.Sprintf("%sServing XTerm at            http://localhost:%d/%s\n", userMessage, httpServer.ServerPort, httpServer.XtermUrlRoutePrefix)
 	}
 
-	// Add route for template pages.
+	// Add route to template pages.
 
-	rootMux.HandleFunc("/site/", func(w http.ResponseWriter, r *http.Request) {
-		templateVariables := TemplateVariables{
-			HttpServerImpl:  *httpServer,
-			HtmlTitle:       "Senzing Tools",
-			ApiServerUrl:    httpServer.getServerUrl(httpServer.EnableSenzingRestAPI, fmt.Sprintf("http://%s/api", r.Host)),
-			ApiServerStatus: httpServer.getServerStatus(httpServer.EnableSenzingRestAPI),
-			SwaggerUrl:      httpServer.getServerUrl(httpServer.EnableSwaggerUI, fmt.Sprintf("http://%s/swagger", r.Host)),
-			SwaggerStatus:   httpServer.getServerStatus(httpServer.EnableSwaggerUI),
-			XtermUrl:        httpServer.getServerUrl(httpServer.EnableXterm, fmt.Sprintf("http://%s/xterm", r.Host)),
-			XtermStatus:     httpServer.getServerStatus(httpServer.EnableXterm),
-		}
-		w.Header().Set("Content-Type", "text/html")
-		filePath := fmt.Sprintf("static/templates%s", r.RequestURI)
-		httpServer.populateStaticTemplate(w, r, filePath, templateVariables)
-	})
+	rootMux.HandleFunc("/site/", httpServer.siteFunc)
+	userMessage = fmt.Sprintf("%sServing Console at          http://localhost:%d\n", userMessage, httpServer.ServerPort)
 
 	// Add route to static files.
 
@@ -240,10 +264,13 @@ func (httpServer *HttpServerImpl) Serve(ctx context.Context) error {
 
 	// Start service.
 
+	listenOnAddress := fmt.Sprintf("%s:%v", httpServer.ServerAddress, httpServer.ServerPort)
+	userMessage = fmt.Sprintf("%sStarting server on interface:port '%s'...\n", userMessage, listenOnAddress)
 	fmt.Println(userMessage)
 	server := http.Server{
-		Addr:    listenOnAddress,
-		Handler: rootMux,
+		ReadHeaderTimeout: httpServer.ReadHeaderTimeout,
+		Addr:              listenOnAddress,
+		Handler:           rootMux,
 	}
 	return server.ListenAndServe()
 }

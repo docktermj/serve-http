@@ -230,7 +230,11 @@ func getOutboundIP() net.IP {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			panic(err)
+		}
+	}()
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 	return localAddr.IP
 }
@@ -310,6 +314,7 @@ func RunE(_ *cobra.Command, _ []string) error {
 		ObserverOrigin:                 viper.GetString(option.ObserverOrigin),
 		Observers:                      observers,
 		OpenApiSpecification:           openApiSpecification,
+		ReadHeaderTimeout:              60 * time.Second,
 		SenzingEngineConfigurationJson: senzingEngineConfigurationJson,
 		SenzingModuleName:              viper.GetString(option.EngineModuleName),
 		SenzingVerboseLogging:          viper.GetInt(option.EngineLogLevel),
