@@ -144,7 +144,7 @@ func (httpServer *HttpServerImpl) populateOpenApiSpecification(templateVariables
 // --- http.ServeMux ----------------------------------------------------------
 
 func (httpServer *HttpServerImpl) getSenzingApiMux(ctx context.Context) *senzingrestapi.Server {
-	service := &restapiservice.HttpServiceImpl{
+	service := &restapiservice.RestApiServiceImpl{
 		GrpcDialOptions:                httpServer.GrpcDialOptions,
 		GrpcTarget:                     httpServer.GrpcTarget,
 		LogLevelName:                   httpServer.LogLevelName,
