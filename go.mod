@@ -5,13 +5,11 @@ go 1.20
 require (
 	github.com/docktermj/cloudshell v0.2.0
 	github.com/docktermj/go-rest-api-client v0.1.2
+	github.com/docktermj/go-rest-api-service v0.1.0
 	github.com/flowchartsman/swaggerui v0.0.0-20221017034628-909ed4f3701b
-	github.com/senzing/g2-sdk-go v0.6.4
 	github.com/senzing/go-common v0.1.3
 	github.com/senzing/go-grpcing v0.1.0
-	github.com/senzing/go-logging v1.2.5
 	github.com/senzing/go-observing v0.2.5
-	github.com/senzing/go-sdk-abstract-factory v0.3.0
 	github.com/senzing/senzing-tools v0.2.8
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.16.0
@@ -50,10 +48,13 @@ require (
 	github.com/prometheus/procfs v0.10.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
+	github.com/senzing/g2-sdk-go v0.6.4 // indirect
 	github.com/senzing/g2-sdk-go-base v0.2.0 // indirect
 	github.com/senzing/g2-sdk-go-grpc v0.3.0 // indirect
 	github.com/senzing/g2-sdk-proto/go v0.0.0-20230526140633-b44eb0f20e1b // indirect
+	github.com/senzing/go-logging v1.2.5 // indirect
 	github.com/senzing/go-messaging v0.2.1 // indirect
+	github.com/senzing/go-sdk-abstract-factory v0.3.0 // indirect
 	github.com/sirupsen/logrus v1.9.2 // indirect
 	github.com/spf13/afero v1.9.5 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
