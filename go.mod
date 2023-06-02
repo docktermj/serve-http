@@ -79,6 +79,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace (
-	github.com/docktermj/go-rest-api-service v0.1.0 => /home/senzing/docktermj.git/go-rest-api-service
-)
+replace github.com/docktermj/go-rest-api-service v0.1.0 => /home/senzing/docktermj.git/go-rest-api-service
