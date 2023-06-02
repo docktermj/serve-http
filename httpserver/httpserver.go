@@ -154,6 +154,7 @@ func (httpServer *HttpServerImpl) getSenzingApiMux(ctx context.Context) *senzing
 		SenzingModuleName:              httpServer.SenzingModuleName,
 		SenzingVerboseLogging:          httpServer.SenzingVerboseLogging,
 		UrlRoutePrefix:                 httpServer.ApiUrlRoutePrefix,
+		OpenApiSpecificationSpec:       httpServer.OpenApiSpecification,
 	}
 	srv, err := senzingrestapi.NewServer(service, httpServer.ServerOptions...)
 	if err != nil {
