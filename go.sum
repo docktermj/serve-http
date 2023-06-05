@@ -183,8 +183,8 @@ github.com/matttproud/golang_protobuf_extensions v1.0.4 h1:mmDVorXM7PCGKw94cs5zk
 github.com/matttproud/golang_protobuf_extensions v1.0.4/go.mod h1:BSXmuO+STAnVfrANrmjBb36TMTDstsz7MSK+HVaYKv4=
 github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=
 github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
-github.com/ogen-go/ogen v0.68.3 h1:sl0pkFJqydw2j/rJgCKL0wDV59oRM9J7JXVxa5JA2Tw=
-github.com/ogen-go/ogen v0.68.3/go.mod h1:9ldsS255SMpeDi0hW2asuXuQ6YHe1fP5+fPJTlNvTyY=
+github.com/ogen-go/ogen v0.68.4 h1:jfgBhIw0aPJ3hFgM59Le8Yzw7Mg9zlxyCeFOrq4LN3c=
+github.com/ogen-go/ogen v0.68.4/go.mod h1:lDVQSMdMKmA2j6a7iEEYodS2uNfGSQcyJEnYMC5k61o=
 github.com/pelletier/go-toml/v2 v2.0.8 h1:0ctb6s9mE31h0/lhu+J6OPmVeDxJn+kYnJc2jZR9tGQ=
 github.com/pelletier/go-toml/v2 v2.0.8/go.mod h1:vuYfssBdrU2XDZ9bYydBu6t+6a6PYNcZljzZR9VXg+4=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
@@ -227,8 +227,8 @@ github.com/senzing/go-sdk-abstract-factory v0.3.0 h1:2QoumWfON/bu8zzVxkHG8fJ4IE6
 github.com/senzing/go-sdk-abstract-factory v0.3.0/go.mod h1:LpDv9ahsQ2pzXR3NOXZh4tujTPhPLNX+ro07fvHMr7E=
 github.com/senzing/senzing-tools v0.2.8 h1:987GLtzkgt0doJ+y9s9TQMMfYXRUF3tPPJiMNXbXDj0=
 github.com/senzing/senzing-tools v0.2.8/go.mod h1:Vt1ik8xpctPao4idGg3E5gbVfNgrYo1fBGGdnPk6xZI=
-github.com/sirupsen/logrus v1.9.2 h1:oxx1eChJGI6Uks2ZC4W1zpLlVgqB8ner4EuQwV4Ik1Y=
-github.com/sirupsen/logrus v1.9.2/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
+github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=
+github.com/sirupsen/logrus v1.9.3/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
 github.com/spf13/afero v1.9.5 h1:stMpOSZFs//0Lv29HduCmli3GUfpFoF3Y1Q/aXj/wVM=
 github.com/spf13/afero v1.9.5/go.mod h1:UBogFpq8E9Hx+xc5CNTTEpTnuHVmXDwZcZcE1eb/UhQ=
 github.com/spf13/cast v1.5.1 h1:R+kOtfhWQE6TVQzY+4D7wJLBgkdVasCEFxSUBYBYIlA=
