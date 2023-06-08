@@ -4,7 +4,6 @@ go 1.20
 
 require (
 	github.com/docktermj/cloudshell v0.2.0
-	github.com/docktermj/go-rest-api-client v0.1.2
 	github.com/docktermj/go-rest-api-service v0.1.0
 	github.com/flowchartsman/swaggerui v0.0.0-20221017034628-909ed4f3701b
 	github.com/senzing/go-common v0.1.3
@@ -80,7 +79,6 @@ require (
 )
 
 replace (
-	github.com/docktermj/go-rest-api-client v0.1.2 => /home/senzing/docktermj.git/go-rest-api-client
 	github.com/docktermj/go-rest-api-service v0.1.0 => /home/senzing/docktermj.git/go-rest-api-service
 	github.com/senzing/g2-sdk-go v0.6.4 => /home/senzing/senzing.git/g2-sdk-go
 )

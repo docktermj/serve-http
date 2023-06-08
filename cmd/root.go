@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/docktermj/go-rest-api-service/senzingrestservice"
 	"github.com/docktermj/serve-http/httpserver"
 	"github.com/senzing/go-common/g2engineconfigurationjson"
 	"github.com/senzing/go-grpcing/grpcurl"
@@ -76,9 +77,6 @@ var (
 	defaultXtermAllowedHostnames []string = getDefaultAllowedHostnames()
 	defaultXtermArguments        []string
 )
-
-//go:embed senzing-openapi.json
-var openApiSpecification []byte
 
 // ----------------------------------------------------------------------------
 // Private functions
@@ -313,7 +311,7 @@ func RunE(_ *cobra.Command, _ []string) error {
 		LogLevelName:                   viper.GetString(option.LogLevel),
 		ObserverOrigin:                 viper.GetString(option.ObserverOrigin),
 		Observers:                      observers,
-		OpenApiSpecification:           openApiSpecification,
+		OpenApiSpecification:           senzingrestservice.OpenApiSpecificationJson,
 		ReadHeaderTimeout:              60 * time.Second,
 		SenzingEngineConfigurationJson: senzingEngineConfigurationJson,
 		SenzingModuleName:              viper.GetString(option.EngineModuleName),

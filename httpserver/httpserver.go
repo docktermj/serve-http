@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/docktermj/cloudshell/xtermservice"
-	"github.com/docktermj/go-rest-api-client/senzingrestapi"
-	"github.com/docktermj/go-rest-api-service/restapiservice"
+	"github.com/docktermj/go-rest-api-service/senzingrestapi"
+	"github.com/docktermj/go-rest-api-service/senzingrestservice"
 	"github.com/flowchartsman/swaggerui"
 	"github.com/senzing/go-observing/observer"
 	"google.golang.org/grpc"
@@ -144,7 +144,7 @@ func (httpServer *HttpServerImpl) populateOpenApiSpecification(templateVariables
 // --- http.ServeMux ----------------------------------------------------------
 
 func (httpServer *HttpServerImpl) getSenzingApiMux(ctx context.Context) *senzingrestapi.Server {
-	service := &restapiservice.RestApiServiceImpl{
+	service := &senzingrestservice.RestApiServiceImpl{
 		GrpcDialOptions:                httpServer.GrpcDialOptions,
 		GrpcTarget:                     httpServer.GrpcTarget,
 		LogLevelName:                   httpServer.LogLevelName,
