@@ -85,8 +85,8 @@ var (
 // Since init() is always invoked, define command line parameters.
 func init() {
 	RootCmd.Flags().Bool(option.EnableSwaggerUi, defaultEnableSwaggerUI, fmt.Sprintf("Enable the Swagger UI service [%s]", envar.EnableSwaggerUi))
-	RootCmd.Flags().Bool(optionEnableAll, defaultEnableSwaggerUI, fmt.Sprintf("Enable all services [%s]", envarEnableAll))
-	RootCmd.Flags().Bool(optionEnableSenzingRestApi, defaultEnableSwaggerUI, fmt.Sprintf("Enable the Senzing REST API service [%s]", envarEnableSenzingRestApi))
+	RootCmd.Flags().Bool(optionEnableAll, defaultEnableAll, fmt.Sprintf("Enable all services [%s]", envarEnableAll))
+	RootCmd.Flags().Bool(optionEnableSenzingRestApi, defaultEnableSenzingRestApi, fmt.Sprintf("Enable the Senzing REST API service [%s]", envarEnableSenzingRestApi))
 	RootCmd.Flags().Bool(optionEnableXterm, defaultEnableXterm, fmt.Sprintf("Enable the XTerm service [%s]", envarEnableXterm))
 	RootCmd.Flags().Int(option.EngineLogLevel, defaultEngineLogLevel, fmt.Sprintf("Log level for Senzing Engine [%s]", envar.EngineLogLevel))
 	RootCmd.Flags().Int(option.HttpPort, defaultHttpPort, fmt.Sprintf("Port to serve HTTP [%s]", envar.HttpPort))
