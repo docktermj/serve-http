@@ -311,7 +311,7 @@ func RunE(_ *cobra.Command, _ []string) error {
 		LogLevelName:                   viper.GetString(option.LogLevel),
 		ObserverOrigin:                 viper.GetString(option.ObserverOrigin),
 		Observers:                      observers,
-		OpenApiSpecification:           senzingrestservice.OpenApiSpecificationJson,
+		OpenApiSpecificationRest:       senzingrestservice.OpenApiSpecificationJson,
 		ReadHeaderTimeout:              60 * time.Second,
 		SenzingEngineConfigurationJson: senzingEngineConfigurationJson,
 		SenzingModuleName:              viper.GetString(option.EngineModuleName),

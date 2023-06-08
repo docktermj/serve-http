@@ -207,6 +207,8 @@ github.com/russross/blackfriday/v2 v2.1.0 h1:JIOH55/0cWyOuilr9/qlrm0BSXldqnqwMsf
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/segmentio/asm v1.2.0 h1:9BQrFxC+YOHJlTlHGkTrFWf59nbL3XnCoFLTwDCI7ys=
 github.com/segmentio/asm v1.2.0/go.mod h1:BqMnlJP91P8d+4ibuonYZw9mfnzI9HfxselHZr5aAcs=
+github.com/senzing/g2-sdk-go v0.6.5-0.20230605212343-7516a3ae79ba h1:fOHcIyKphwrdnq3YGObThpIwKZu6lHYnh7nRl+4fs5I=
+github.com/senzing/g2-sdk-go v0.6.5-0.20230605212343-7516a3ae79ba/go.mod h1:R5tqdbPY12q3nDAAyJEy7qg+GNyXbgZu5M/s5U2FwGM=
 github.com/senzing/g2-sdk-go-base v0.2.0 h1:WBIGbI7UMB8CSStniC/yZ8qxibAAMbXd+7iKC6i/z0s=
 github.com/senzing/g2-sdk-go-base v0.2.0/go.mod h1:X3sgd0PeZfDH9qf2Wjf/ppkpRmPaHrTrkhQp3hit9OQ=
 github.com/senzing/g2-sdk-go-grpc v0.3.0 h1:J31TKz6rZlARarbtWdU8pyUVrrTLrzlErAGJwNzH7Kc=

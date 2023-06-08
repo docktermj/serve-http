@@ -47,7 +47,7 @@ require (
 	github.com/prometheus/procfs v0.10.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
-	github.com/senzing/g2-sdk-go v0.6.4 // indirect
+	github.com/senzing/g2-sdk-go v0.6.5-0.20230605212343-7516a3ae79ba // indirect
 	github.com/senzing/g2-sdk-go-base v0.2.0 // indirect
 	github.com/senzing/g2-sdk-go-grpc v0.3.0 // indirect
 	github.com/senzing/g2-sdk-proto/go v0.0.0-20230526140633-b44eb0f20e1b // indirect

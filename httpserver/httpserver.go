@@ -36,8 +36,7 @@ type HttpServerImpl struct {
 	LogLevelName                   string
 	ObserverOrigin                 string
 	Observers                      []observer.Observer
-	OpenApiSpecification           []byte
-	openApiSpecificationTemplate   *template.Template
+	OpenApiSpecificationRest       []byte
 	ReadHeaderTimeout              time.Duration
 	SenzingEngineConfigurationJson string
 	SenzingModuleName              string
@@ -100,12 +99,22 @@ func (httpServer *HttpServerImpl) getServerUrl(up bool, url string) string {
 	return result
 }
 
-func (httpServer *HttpServerImpl) openApiFunc() http.HandlerFunc {
+func (httpServer *HttpServerImpl) openApiFunc(ctx context.Context, openApiSpecification []byte) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		var bytesBuffer bytes.Buffer
+		bufioWriter := bufio.NewWriter(&bytesBuffer)
+		openApiSpecificationTemplate, err := template.New("OpenApiTemplate").Parse(string(httpServer.OpenApiSpecificationRest))
+		if err != nil {
+			panic(err)
+		}
 		templateVariables := TemplateVariables{
 			RequestHost: r.Host,
 		}
-		_, err := w.Write(httpServer.populateOpenApiSpecification(templateVariables))
+		err = openApiSpecificationTemplate.Execute(bufioWriter, templateVariables)
+		if err != nil {
+			panic(err)
+		}
+		_, err = w.Write(bytesBuffer.Bytes())
 		if err != nil {
 			panic(err)
 		}
@@ -129,22 +138,10 @@ func (httpServer *HttpServerImpl) populateStaticTemplate(responseWriter http.Res
 	}
 }
 
-func (httpServer *HttpServerImpl) populateOpenApiSpecification(templateVariables TemplateVariables) []byte {
-	var bytesBuffer bytes.Buffer
-	bufioWriter := bufio.NewWriter(&bytesBuffer)
-	if httpServer.openApiSpecificationTemplate != nil {
-		err := httpServer.openApiSpecificationTemplate.Execute(bufioWriter, templateVariables)
-		if err != nil {
-			panic(err)
-		}
-	}
-	return bytesBuffer.Bytes()
-}
-
 // --- http.ServeMux ----------------------------------------------------------
 
 func (httpServer *HttpServerImpl) getSenzingApiMux(ctx context.Context) *senzingrestapi.Server {
-	service := &senzingrestservice.RestApiServiceImpl{
+	service := &senzingrestservice.SenzingRestServiceImpl{
 		GrpcDialOptions:                httpServer.GrpcDialOptions,
 		GrpcTarget:                     httpServer.GrpcTarget,
 		LogLevelName:                   httpServer.LogLevelName,
@@ -154,7 +151,7 @@ func (httpServer *HttpServerImpl) getSenzingApiMux(ctx context.Context) *senzing
 		SenzingModuleName:              httpServer.SenzingModuleName,
 		SenzingVerboseLogging:          httpServer.SenzingVerboseLogging,
 		UrlRoutePrefix:                 httpServer.ApiUrlRoutePrefix,
-		OpenApiSpecificationSpec:       httpServer.OpenApiSpecification,
+		OpenApiSpecificationSpec:       httpServer.OpenApiSpecificationRest,
 	}
 	srv, err := senzingrestapi.NewServer(service, httpServer.ServerOptions...)
 	if err != nil {
@@ -164,16 +161,11 @@ func (httpServer *HttpServerImpl) getSenzingApiMux(ctx context.Context) *senzing
 }
 
 func (httpServer *HttpServerImpl) getSwaggerUiMux(ctx context.Context) *http.ServeMux {
-	var err error = nil
-	httpServer.openApiSpecificationTemplate, err = template.New("OpenApiTemplate").Parse(string(httpServer.OpenApiSpecification))
-	if err != nil {
-		panic(err)
-	}
 	swaggerMux := swaggerui.Handler([]byte{}) // OpenAPI specification handled by openApiFunc()
 	swaggerFunc := swaggerMux.ServeHTTP
 	submux := http.NewServeMux()
 	submux.HandleFunc("/", swaggerFunc)
-	submux.HandleFunc("/swagger_spec", httpServer.openApiFunc())
+	submux.HandleFunc("/swagger_spec", httpServer.openApiFunc(ctx, httpServer.OpenApiSpecificationRest))
 	return submux
 }
 
